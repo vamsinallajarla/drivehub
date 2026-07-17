@@ -802,6 +802,10 @@ Freelance, 15000</div>
 
 </main>
 
+<!-- Loaded from a separate file kept OUT of git (see .gitignore). Missing this file is fine —
+     the app just falls back to manual config paste on the Cloud Sync page. -->
+<script src="firebase-config.js"></script>
+
 <script>
 // Works inside Claude's artifact preview (window.storage) AND as a standalone downloaded file
 // (falls back to real localStorage, since window.storage only exists in the Claude sandbox).
@@ -829,17 +833,9 @@ const storageShim = {
   }
 };
 
-// Pre-filled so a new device doesn't need the config re-pasted — Firebase's client config
-// isn't a secret (it's just project identifiers); real protection is your Firestore rules
-// plus verifying your identity. Edit this only if you switch to a different Firebase project.
-const DEFAULT_FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDltK1_c9oUf3LCENkmIlJGzgWNOyUV1UA",
-  authDomain: "myapp-a3c22.firebaseapp.com",
-  projectId: "myapp-a3c22",
-  storageBucket: "myapp-a3c22.firebasestorage.app",
-  messagingSenderId: "259866865688",
-  appId: "1:259866865688:web:6208764a22480bcc7c936d"
-};
+// Firebase config is NOT hardcoded here on purpose — it's loaded from firebase-config.js,
+// a separate file you keep out of git (see .gitignore). If that file isn't present,
+// window.DEFAULT_FIREBASE_CONFIG stays undefined and the app falls back to manual paste.
 
 const STORE_KEY = 'ledger-finance-v2';
 const DEMO_STORE_KEY = 'ledger-finance-demo-v1';
@@ -938,7 +934,9 @@ async function load(){
   updateModeUI();
   render();
   renderInboxLog();
-  document.getElementById('fbConfig').value = JSON.stringify(DEFAULT_FIREBASE_CONFIG, null, 2);
+  if(window.DEFAULT_FIREBASE_CONFIG){
+    document.getElementById('fbConfig').value = JSON.stringify(window.DEFAULT_FIREBASE_CONFIG, null, 2);
+  }
   if(currentMode === 'real'){ await restoreIdentity(); await restoreCloudSettings(); }
 }
 async function save(){
