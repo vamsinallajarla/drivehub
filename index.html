@@ -1763,6 +1763,7 @@ async function getAuthConfig(){
       if(parsed.cfgText) return parseLenientConfig(parsed.cfgText);
     }
   }catch(e){}
+  if(window.DEFAULT_FIREBASE_CONFIG) return window.DEFAULT_FIREBASE_CONFIG;
   return null;
 }
 async function sendLockOtp(){
