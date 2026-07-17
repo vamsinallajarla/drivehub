@@ -1,0 +1,4 @@
+# Keep Firebase project config out of the public repo.
+# The app itself still works without this file — it just falls back to
+# pasting the config manually on the Cloud Sync page.
+firebase-config.js
