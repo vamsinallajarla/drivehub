@@ -1,2360 +1,338 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ledger — Financial Cockpit</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Passbook — Bank Transaction Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0A0D10;
-    --panel:#12161B;
-    --panel2:#161B21;
-    --line:#232A31;
-    --text:#E7E9EA;
-    --muted:#7C8791;
-    --dim:#4B535A;
-    --green:#4FD1A5;
-    --red:#FF6B5C;
-    --amber:#F5B942;
-    --blue:#5B9FFF;
-    --purple:#B98CE8;
+    --ink:#1C2530;
+    --paper:#F7F4EC;
+    --paper-raised:#FDFCF7;
+    --rule:#C9C2AE;
+    --credit:#2F6F4F;
+    --debit:#A34430;
+    --gold:#B08D57;
+    --muted:#7B7466;
   }
   *{box-sizing:border-box;}
-  html,body{height:100%;}
   body{
     margin:0;
-    background:
-      radial-gradient(ellipse at top left, rgba(91,159,255,0.06), transparent 50%),
-      radial-gradient(ellipse at bottom right, rgba(79,209,165,0.05), transparent 50%),
-      var(--bg);
-    background-attachment:fixed;
-    color:var(--text);
-    font-family:'Inter',-apple-system,'Segoe UI',sans-serif;
-    display:flex;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
   }
-  .mono{font-family:ui-monospace,'SF Mono','Cascadia Code',Consolas,monospace;}
+  .wrap{max-width:920px;margin:0 auto;padding:32px 24px 80px;}
 
-  /* Sidebar */
-  .sidebar{
-    width:220px; flex:none; height:100vh; position:sticky; top:0;
-    border-right:1px solid var(--line);
-    background:rgba(18,22,27,0.6);
-    display:flex; flex-direction:column;
-    padding:20px 0;
-  }
-  .sidebar .brand{padding:0 20px 20px; border-bottom:1px solid var(--line); margin-bottom:12px;}
-  .sidebar .brand .row{display:flex; align-items:center; gap:9px;}
-  .sidebar .brand .dot{width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green);}
-  .sidebar .brand h1{margin:0; font-size:0.95rem; letter-spacing:0.1em; text-transform:uppercase; font-weight:700;}
-  .sidebar .brand .sub{font-size:0.65rem; color:var(--muted); letter-spacing:0.08em; margin-top:2px;}
-
-  .nav-item{
-    display:flex; align-items:center; gap:11px;
-    padding:11px 20px; cursor:pointer; color:var(--muted);
-    font-size:0.82rem; font-weight:500; border-left:2px solid transparent;
+  /* Header — passbook cover */
+  .cover{
+    background:var(--ink);
+    color:var(--paper);
+    border-radius:6px;
+    padding:28px 32px;
     position:relative;
+    overflow:hidden;
+    margin-bottom:28px;
   }
-  .nav-item .ic{width:16px; text-align:center; font-size:0.9rem; flex:none;}
-  .nav-item .badge{
-    margin-left:auto; font-size:0.65rem; color:var(--dim);
-    font-family:ui-monospace,monospace;
+  .cover::before{
+    content:"";
+    position:absolute; inset:8px;
+    border:1px solid rgba(247,244,236,0.25);
+    border-radius:3px;
+    pointer-events:none;
   }
-  .nav-item:hover{color:var(--text); background:rgba(255,255,255,0.02);}
-  .nav-item.active{
-    color:var(--text); border-left-color:var(--blue);
-    background:rgba(91,159,255,0.07);
+  .cover .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
+  .cover h1{font-family:'Fraunces',serif;font-weight:600;font-size:32px;margin:0 0 4px;}
+  .cover .sub{font-size:13px;color:rgba(247,244,236,0.7);}
+  .cover .status{
+    position:absolute; top:24px; right:28px;
+    font-family:'IBM Plex Mono',monospace;font-size:11px;
+    padding:4px 10px; border:1px solid rgba(247,244,236,0.35); border-radius:20px;
   }
-  .nav-item.active .badge{color:var(--blue);}
-  .nav-spacer{flex:1;}
-  .sidebar footer{
-    padding:14px 20px; font-size:0.62rem; color:var(--dim); border-top:1px solid var(--line);
-  }
+  .status.live{color:#8fd4ab;border-color:#8fd4ab55;}
+  .status.off{color:#e0a89c;border-color:#e0a89c55;}
 
-  /* Main */
-  main{flex:1; min-width:0; height:100vh; overflow-y:auto;}
-  .topbar{
-    display:flex; justify-content:space-between; align-items:center;
-    padding:18px 32px; border-bottom:1px solid var(--line);
-    position:sticky; top:0; z-index:5;
-    background:rgba(10,13,16,0.85); backdrop-filter:blur(8px);
+  /* Sign-in card */
+  .signin{
+    background:var(--paper-raised);
+    border:1px solid var(--rule);
+    border-radius:6px;
+    padding:24px;
+    margin-bottom:28px;
   }
-  .topbar h2{margin:0; font-size:1.05rem; letter-spacing:0.02em;}
-  .topbar .t-sub{font-size:0.72rem; color:var(--muted); margin-top:2px;}
-  .topbar .clock{font-size:0.72rem; color:var(--muted);}
+  .signin h3{font-family:'Fraunces',serif;margin:0 0 12px;font-size:18px;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;}
+  input{
+    font-family:'IBM Plex Mono',monospace;
+    padding:10px 12px;border:1px solid var(--rule);border-radius:4px;
+    background:#fff;font-size:14px;flex:1;min-width:180px;
+  }
+  button{
+    font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13px;
+    padding:10px 18px;border:none;border-radius:4px;
+    background:var(--ink);color:var(--paper);cursor:pointer;
+  }
+  button:hover{background:#2c3a4a;}
+  button.ghost{background:transparent;color:var(--ink);border:1px solid var(--rule);}
+  #recaptcha-container{margin-top:10px;}
 
-  .page{display:none; padding:24px 32px 60px; max-width:1200px;}
-  .page.active{display:block;}
+  /* Summary ledger strip */
+  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px;}
+  .sum-card{
+    background:var(--paper-raised);border:1px solid var(--rule);border-radius:6px;
+    padding:16px 18px;position:relative;
+  }
+  .sum-card .label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+  .sum-card .amt{font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:600;margin-top:6px;font-variant-numeric:tabular-nums;}
+  .sum-card.income .amt{color:var(--credit);}
+  .sum-card.transfer .amt{color:var(--gold);}
+  .sum-card.expense .amt{color:var(--debit);}
+  .bar{height:4px;border-radius:2px;background:var(--rule);margin-top:10px;overflow:hidden;}
+  .bar > div{height:100%;}
+  .income .bar > div{background:var(--credit);}
+  .transfer .bar > div{background:var(--gold);}
+  .expense .bar > div{background:var(--debit);}
 
-  /* KPI strip (overview) */
-  .kpi-row{display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:14px; margin-bottom:16px;}
-  .kpi{
-    background:linear-gradient(180deg,var(--panel2),var(--panel));
-    border:1px solid var(--line); border-radius:10px; padding:18px 20px; position:relative; overflow:hidden;
+  /* Ledger table */
+  .ledger{background:var(--paper-raised);border:1px solid var(--rule);border-radius:6px;overflow:hidden;}
+  .ledger-head{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:16px 20px;border-bottom:1px solid var(--rule);
   }
-  .kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,var(--blue));}
-  .kpi .k-label{font-size:0.66rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:8px;}
-  .kpi .k-value{font-size:1.9rem; font-weight:700; letter-spacing:-0.01em;}
-  .kpi.hero .k-value{font-size:2.5rem;}
-  .kpi .k-note{font-size:0.72rem; color:var(--dim); margin-top:6px;}
-  .kpi.green{--accent:var(--green);} .kpi.green .k-value{color:var(--green);}
-  .kpi.red{--accent:var(--red);} .kpi.red .k-value{color:var(--red);}
-  .kpi.blue{--accent:var(--blue);}
-  .kpi.amber{--accent:var(--amber);} .kpi.amber .k-value{color:var(--amber);}
+  .ledger-head h3{font-family:'Fraunces',serif;margin:0;font-size:18px;}
+  .ledger-head .count{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);}
+  .txn{
+    display:grid;grid-template-columns:90px 1fr auto auto;gap:14px;align-items:center;
+    padding:13px 20px;border-bottom:1px dashed var(--rule);
+  }
+  .txn:last-child{border-bottom:none;}
+  .txn .date{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);}
+  .txn .desc{font-size:13.5px;}
+  .txn .desc .acct{display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);margin-top:2px;}
+  .stamp{
+    font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
+    padding:3px 8px;border-radius:3px;border:1.5px solid; transform:rotate(-2deg); white-space:nowrap;
+  }
+  .stamp.income{color:var(--credit);border-color:var(--credit);}
+  .stamp.transfer{color:var(--gold);border-color:var(--gold);}
+  .stamp.expense{color:var(--debit);border-color:var(--debit);}
+  .txn .amt{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;text-align:right;font-variant-numeric:tabular-nums;}
+  .txn .amt.credit{color:var(--credit);}
+  .txn .amt.debit{color:var(--debit);}
 
-  .viz-row{display:grid; grid-template-columns:repeat(3,1fr) 1.3fr 1.3fr; gap:14px; margin-bottom:16px;}
-  .viz-panel{
-    background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px;
-    display:flex; flex-direction:column; align-items:center;
-  }
-  .viz-panel .v-title{font-size:0.66rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); align-self:flex-start; margin-bottom:6px;}
-  .gauge-num{font-size:1.5rem; font-weight:700;}
-  .gauge-sub{font-size:0.68rem; color:var(--dim); margin-top:2px;}
-  .donut-wrap{display:flex; align-items:center; gap:14px; width:100%;}
-  .legend{display:flex; flex-direction:column; gap:5px; font-size:0.72rem; flex:1; min-width:0;}
-  .legend .li{display:flex; align-items:center; gap:6px; color:var(--muted); overflow:hidden;}
-  .legend .sw{width:8px; height:8px; border-radius:2px; flex:none;}
-  .legend .li .nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text);}
-  .legend .li .amt{margin-left:auto; flex:none; color:var(--muted);}
+  .empty{padding:60px 20px;text-align:center;color:var(--muted);font-size:13.5px;}
+  .empty .big{font-family:'Fraunces',serif;font-size:20px;color:var(--ink);margin-bottom:8px;}
 
-  .verdict-panel{
-    background:var(--panel); border:1px solid var(--line); border-radius:10px;
-    padding:18px 22px; margin-bottom:14px; border-left:3px solid var(--blue);
-  }
-  .verdict-panel.good{border-left-color:var(--green);}
-  .verdict-panel.warn{border-left-color:var(--amber);}
-  .verdict-panel.bad{border-left-color:var(--red);}
-  .verdict-panel .v-tag{font-size:0.64rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;}
-  .verdict-panel p{margin:0; line-height:1.55; font-size:0.92rem;}
-
-  /* Category page layout */
-  .cat-head{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px;}
-  .cat-total{
-    background:var(--panel); border:1px solid var(--line); border-radius:10px;
-    padding:14px 22px; text-align:right;
-  }
-  .cat-total .ct-label{font-size:0.64rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted);}
-  .cat-total .ct-value{font-size:1.6rem; font-weight:700; margin-top:2px;}
-
-  .cat-layout{display:grid; grid-template-columns:1.5fr 1fr; gap:16px; align-items:start;}
-  section.panel{background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden;}
-  .panel .p-head{display:flex; justify-content:space-between; align-items:center; padding:13px 18px; border-bottom:1px solid var(--line);}
-  .panel .p-head h2{margin:0; font-size:0.82rem; letter-spacing:0.04em; font-weight:600;}
-  .p-body{padding:6px 18px 16px;}
-
-  table{width:100%; border-collapse:collapse; font-size:0.86rem;}
-  th{text-align:left; font-size:0.62rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--dim); font-weight:500; padding:7px 4px; border-bottom:1px solid var(--line);}
-  th.num, td.num{text-align:right;}
-  td{padding:7px 4px; border-bottom:1px solid rgba(35,42,49,0.5);}
-  tr:last-child td{border-bottom:none;}
-  td input, td select{width:100%; border:1px solid transparent; background:transparent; color:var(--text); font-family:inherit; font-size:0.86rem; padding:6px 6px; border-radius:4px;}
-  td input[type=number]{font-family:ui-monospace,monospace; text-align:right;}
-  td input:focus{outline:none; border-color:var(--blue); background:rgba(91,159,255,0.06);}
-  .del-btn{background:none; border:none; color:var(--red); opacity:0.6; cursor:pointer; font-size:1rem;}
-  .del-btn:hover{opacity:1;}
-  .add-row{margin-top:8px; width:100%; background:transparent; border:1px dashed var(--line); color:var(--muted); padding:9px; border-radius:6px; cursor:pointer; font-size:0.72rem; letter-spacing:0.05em; text-transform:uppercase;}
-  .add-row:hover{border-color:var(--blue); color:var(--blue);}
-  .empty{color:var(--dim); font-size:0.8rem; font-style:italic; padding:12px 4px;}
-
-  /* Entry list — clear view/edit rows */
-  .entry-list{display:flex; flex-direction:column; gap:8px; padding:4px 0 4px;}
-  .entry-row{
-    display:flex; align-items:center; gap:12px; padding:12px 14px;
-    border:1px solid var(--line); border-radius:8px; background:rgba(255,255,255,0.015);
-  }
-  .entry-row .e-main{flex:1; min-width:0;}
-  .entry-row .e-name{font-size:0.9rem; font-weight:600; color:var(--text);}
-  .entry-row .e-amount{font-family:ui-monospace,monospace; font-size:0.8rem; color:var(--muted); margin-top:3px;}
-  .entry-actions{display:flex; gap:6px; flex:none;}
-  .icon-btn{
-    width:32px; height:32px; border-radius:7px; border:1px solid var(--line);
-    background:var(--panel2); color:var(--muted); cursor:pointer;
-    display:flex; align-items:center; justify-content:center; font-size:0.9rem; flex:none;
-  }
-  .icon-btn:hover{color:var(--blue); border-color:var(--blue);}
-  .icon-btn.danger:hover{color:var(--red); border-color:var(--red);}
-  .entry-edit-row{
-    display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;
-    padding:14px; border:1px solid var(--blue); border-radius:8px;
-    background:rgba(91,159,255,0.06);
-  }
-  .entry-edit-row .ee-field{display:flex; flex-direction:column; gap:5px; flex:1; min-width:130px;}
-  .entry-edit-row .ee-label{font-size:0.62rem; letter-spacing:0.07em; text-transform:uppercase; color:var(--muted);}
-  .entry-edit-row input, .entry-edit-row select{
-    background:var(--bg); border:1px solid var(--line); color:var(--text);
-    padding:9px 10px; border-radius:6px; font-size:0.85rem; font-family:inherit; width:100%;
-  }
-  .entry-edit-row input[type=number]{font-family:ui-monospace,monospace;}
-  .entry-edit-row input:focus, .entry-edit-row select:focus{outline:none; border-color:var(--blue);}
-  .entry-edit-actions{display:flex; gap:8px; flex:none;}
-  .btn-save{
-    background:var(--green); color:#052018; border:none; padding:9px 16px;
-    border-radius:6px; font-weight:700; font-size:0.8rem; cursor:pointer;
-  }
-  .btn-save:hover{filter:brightness(1.08);}
-  .btn-cancel{
-    background:transparent; border:1px solid var(--line); color:var(--muted);
-    padding:9px 14px; border-radius:6px; font-size:0.8rem; cursor:pointer;
-  }
-  .btn-cancel:hover{border-color:var(--red); color:var(--red);}
-
-  .util-bar{height:6px; background:var(--line); border-radius:3px; overflow:hidden; margin-top:4px;}
-  .util-fill{height:100%; background:var(--green);}
-  .util-fill.warn{background:var(--amber);}
-  .util-fill.danger{background:var(--red);}
-
-  .side-panel{display:flex; flex-direction:column; gap:14px;}
-  .metric{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px;}
-  .metric .m-label{font-family:ui-monospace,monospace; font-size:0.64rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted);}
-  .metric .m-value{font-size:1.3rem; font-weight:700; margin:4px 0; font-family:ui-monospace,monospace;}
-  .metric .m-note{font-size:0.78rem; color:var(--dim);}
-
-  .analysis-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin-bottom:14px;}
-
-  @media (max-width:1000px){
-    .sidebar{position:fixed; left:-220px; transition:left 0.2s; z-index:50; box-shadow:0 0 30px rgba(0,0,0,0.5);}
-    .sidebar.open{left:0;}
-    .menu-btn{display:flex !important;}
-    .cat-layout{grid-template-columns:1fr;}
-    .viz-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
-    .kpi-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
-    .kpi, .viz-panel, .metric{min-width:0;}
-  }
-  @media (max-width:600px){
-    html, body{overflow-x:hidden;}
-    .kpi-row{grid-template-columns:1fr;}
-    .viz-row{grid-template-columns:1fr 1fr;}
-    .kpi.hero .k-value{font-size:1.7rem;}
-    .kpi .k-value{font-size:1.4rem;}
-    .kpi{padding:14px 16px;}
-    .topbar{padding:14px 16px;}
-    .page{padding:16px 16px 60px;}
-    .import-grid{grid-template-columns:1fr;}
-    .demo-banner{padding:9px 16px; font-size:0.72rem;}
-    .gauge-num{font-size:1.2rem;}
-    .cat-head{flex-direction:column; align-items:flex-start; gap:10px;}
-    .cat-total{text-align:left; width:100%;}
-  }
-  .menu-btn{
-    display:none; align-items:center; justify-content:center;
-    width:32px; height:32px; border:1px solid var(--line); border-radius:6px;
-    background:var(--panel); color:var(--text); cursor:pointer; margin-right:10px;
-  }
-
-  /* Import page */
-  .import-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
-  .import-card{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px;}
-  .import-card h3{margin:0 0 4px; font-size:0.9rem;}
-  .import-card .ic-note{font-size:0.78rem; color:var(--muted); margin-bottom:14px; line-height:1.5;}
-  .import-card.full{grid-column:1 / -1;}
-  .field-label{font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; display:block;}
-  select.imp-select{
-    width:100%; background:var(--bg); border:1px solid var(--line); color:var(--text);
-    padding:9px 10px; border-radius:6px; font-size:0.85rem; margin-bottom:12px;
-  }
-  textarea.imp-text{
-    width:100%; min-height:120px; background:var(--bg); border:1px solid var(--line);
-    color:var(--text); border-radius:6px; padding:10px; font-family:ui-monospace,monospace;
-    font-size:0.82rem; resize:vertical; margin-bottom:10px;
-  }
-  .imp-row{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:8px;}
-  .btn{
-    background:var(--blue); color:#08111F; border:none; padding:9px 16px; border-radius:6px;
-    font-size:0.8rem; font-weight:600; cursor:pointer; letter-spacing:0.02em;
-  }
-  .btn:hover{filter:brightness(1.1);}
-  .btn.ghost{background:transparent; border:1px solid var(--line); color:var(--text);}
-  .btn.ghost:hover{border-color:var(--blue); color:var(--blue);}
-  .btn.danger{background:var(--red); color:#2A0A05;}
-  label.chk{display:flex; align-items:center; gap:6px; font-size:0.78rem; color:var(--muted); cursor:pointer;}
-  .file-drop{
-    border:1px dashed var(--line); border-radius:8px; padding:16px; text-align:center;
-    color:var(--muted); font-size:0.8rem; cursor:pointer; margin-bottom:10px;
-  }
-  .file-drop:hover{border-color:var(--blue); color:var(--blue);}
-  .file-drop input{display:none;}
-  .imp-status{font-size:0.78rem; margin-top:8px; min-height:18px;}
-  .imp-status.ok{color:var(--green);}
-  .imp-status.err{color:var(--red);}
-  .csv-example{
-    background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:8px 10px;
-    font-family:ui-monospace,monospace; font-size:0.72rem; color:var(--muted); margin-bottom:10px; overflow-x:auto;
-    white-space:pre;
-  }
-
-  /* Cloud sync */
-  .cloud-status-bar{
-    display:flex; align-items:center; gap:12px; padding:14px 18px;
-    background:var(--panel); border:1px solid var(--line); border-radius:10px; margin-bottom:16px;
-  }
-  .cloud-status-bar .cs-dot{width:9px; height:9px; border-radius:50%; background:var(--dim); flex:none;}
-  .cloud-status-bar.connected .cs-dot{background:var(--green); box-shadow:0 0 8px var(--green);}
-  .cloud-status-bar .cs-text{font-size:0.85rem;}
-  .cloud-status-bar .cs-sub{font-size:0.72rem; color:var(--dim);}
-  .cloud-status-bar .cs-spacer{flex:1;}
-  .steps{margin:0 0 14px; padding-left:18px; font-size:0.8rem; color:var(--muted); line-height:1.8;}
-  .steps a{color:var(--blue);}
-  .callout{
-    background:rgba(245,185,66,0.08); border:1px solid rgba(245,185,66,0.3); border-radius:8px;
-    padding:12px 14px; font-size:0.78rem; color:var(--amber); line-height:1.55; margin-top:12px;
-  }
-  input.imp-select-text{
-    width:100%; background:var(--bg); border:1px solid var(--line); color:var(--text);
-    padding:9px 10px; border-radius:6px; font-size:0.85rem; margin-bottom:12px; font-family:ui-monospace,monospace;
-  }
-
-  /* Mode switch */
-  .mode-switch{
-    display:flex; gap:4px; margin-top:12px; background:var(--bg);
-    border:1px solid var(--line); border-radius:8px; padding:3px;
-  }
-  .mode-switch button{
-    flex:1; background:transparent; border:none; color:var(--muted);
-    padding:7px 6px; border-radius:6px; font-size:0.64rem; letter-spacing:0.04em;
-    text-transform:uppercase; cursor:pointer; font-weight:700;
-  }
-  .mode-switch button:hover{color:var(--text);}
-  .mode-switch button.real.active{background:var(--blue); color:#08111F;}
-  .mode-switch button.demo.active{background:var(--amber); color:#2b1c00;}
-  .demo-banner{
-    display:none; background:rgba(245,185,66,0.1); border-bottom:1px solid rgba(245,185,66,0.35);
-    color:var(--amber); font-size:0.78rem; padding:9px 32px; text-align:center; font-weight:600;
-    letter-spacing:0.02em;
-  }
-  .demo-banner.show{display:block;}
-
-  /* Lock screen */
-  .lock-screen{
-    position:fixed; inset:0; background:var(--bg); z-index:100;
-    display:flex; align-items:center; justify-content:center; padding:20px;
-  }
-  .lock-screen.hidden{display:none;}
-  .lock-card{
-    background:var(--panel); border:1px solid var(--line); border-radius:14px;
-    padding:32px 28px; width:340px; max-width:100%; text-align:center;
-  }
-  .lock-logo{font-size:1.25rem; font-weight:700; letter-spacing:0.05em;}
-  .lock-sub{font-size:0.8rem; color:var(--muted); margin:6px 0 20px;}
-  .lock-card input{
-    width:100%; background:var(--bg); border:1px solid var(--line); color:var(--text);
-    padding:11px 12px; border-radius:8px; font-size:1rem; text-align:center;
-    font-family:ui-monospace,monospace; letter-spacing:0.04em;
-  }
-  .lock-card input:focus{outline:none; border-color:var(--blue);}
+  .footnote{margin-top:20px;font-size:11.5px;color:var(--muted);text-align:center;}
 </style>
 </head>
 <body>
+<div class="wrap">
 
-<div class="lock-screen hidden" id="lockScreen">
-  <div class="lock-card">
-    <div class="lock-logo">◆ Ledger</div>
-    <div class="lock-sub">Enter your mobile number to unlock</div>
-    <div id="lockStep1">
-      <input id="lockPhone" type="tel" placeholder="+91 98765 43210">
-      <button class="btn" style="width:100%; margin-top:10px;" onclick="sendLockOtp()">Send OTP</button>
+  <div class="cover">
+    <div class="eyebrow">Bank Sync · Passbook</div>
+    <h1>Your Ledger</h1>
+    <div class="sub">Every SMS-verified credit and debit, in one place.</div>
+    <div id="statusBadge" class="status off">not connected</div>
+  </div>
+
+  <div class="signin" id="signinCard">
+    <h3>Sign in</h3>
+    <div class="row">
+      <button id="googleBtn">Continue with Google</button>
     </div>
-    <div id="lockStep2" style="display:none;">
-      <input id="lockOtp" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code">
-      <button class="btn" style="width:100%; margin-top:10px;" onclick="verifyLockOtp()">Verify &amp; Unlock</button>
-      <button class="btn-cancel" style="width:100%; margin-top:8px;" onclick="backToPhoneStep()">Use a different number</button>
+    <div class="row" style="margin-top:14px;">
+      <input id="emailInput" type="email" placeholder="Email" />
+      <input id="passwordInput" type="password" placeholder="Password" />
     </div>
-    <div class="imp-status" id="lockStatus" style="text-align:center;"></div>
-    <div id="recaptcha-container" style="margin-top:10px;"></div>
+    <div class="row" style="margin-top:10px;">
+      <button id="signInBtn">Sign in</button>
+      <button class="ghost" id="signUpBtn">Create account</button>
+    </div>
+  </div>
+  <!-- recaptcha-container removed: no longer needed without phone auth -->
+
+  <div class="signin" id="apiKeyCard" style="display:none;">
+    <h3>iPhone Shortcut key</h3>
+    <div class="row">
+      <button id="genKeyBtn">Generate key</button>
+      <input id="apiKeyOutput" type="text" readonly placeholder="Your key will appear here" />
+      <button class="ghost" id="copyKeyBtn">Copy</button>
+    </div>
+    <div class="footnote" style="margin-top:10px;text-align:left;">
+      Paste this into your Shortcut's "Get Contents of URL" action as header <code>x-api-key</code>.
+      Endpoint: <code>https://REGION-PROJECT.cloudfunctions.net/ingestTransaction</code> · POST · JSON body:
+      <code>{"amount":1500,"type":"credit","rawText":"full SMS text"}</code>
+    </div>
+  </div>
+
+  <div id="appContent" style="display:none;">
+  <div class="summary">
+    <div class="sum-card income">
+      <div class="label">Income (Salary)</div>
+      <div class="amt" id="incomeTotal">₹0</div>
+      <div class="bar"><div id="incomeBar" style="width:0%"></div></div>
+    </div>
+    <div class="sum-card transfer">
+      <div class="label">Other Credit / Transfer</div>
+      <div class="amt" id="transferTotal">₹0</div>
+      <div class="bar"><div id="transferBar" style="width:0%"></div></div>
+    </div>
+    <div class="sum-card expense">
+      <div class="label">Expense (Debits)</div>
+      <div class="amt" id="expenseTotal">₹0</div>
+      <div class="bar"><div id="expenseBar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="ledger">
+    <div class="ledger-head">
+      <h3>Transactions</h3>
+      <div class="count" id="txnCount">0 entries</div>
+    </div>
+    <div id="txnList">
+      <div class="empty">
+        <div class="big">No entries yet</div>
+        Sign in above — transactions from your Shortcut will appear here in real time.
+      </div>
+    </div>
+  </div>
+
+  <div class="footnote">Bank-only sync via SMS. Salary credits are the only entries counted as Income; every other credit is Other Credit/Transfer.</div>
   </div>
 </div>
 
-<nav class="sidebar" id="sidebar">
-  <div class="brand">
-    <div class="row"><div class="dot" id="statusDot"></div><h1>Ledger</h1></div>
-    <div class="sub">financial cockpit</div>
-    <div class="mode-switch" id="modeSwitch">
-      <button class="real" onclick="switchMode('real')">Real Data</button>
-      <button class="demo" onclick="switchMode('demo')">Demo Data</button>
-    </div>
-  </div>
-  <div class="nav-item active" data-page="overview"><span class="ic">◆</span> Overview</div>
-  <div class="nav-item" data-page="income"><span class="ic">↑</span> Income <span class="badge mono" id="navIncome"></span></div>
-  <div class="nav-item" data-page="expense"><span class="ic">↓</span> Expenses <span class="badge mono" id="navExpense"></span></div>
-  <div class="nav-item" data-page="transfer"><span class="ic">⇄</span> Cashflow / Transfers <span class="badge mono" id="navTransfer"></span></div>
-  <div class="nav-item" data-page="internal"><span class="ic">⇌</span> Internal Transfers <span class="badge mono" id="navInternal"></span></div>
-  <div class="nav-item" data-page="asset"><span class="ic">▣</span> Assets <span class="badge mono" id="navAsset"></span></div>
-  <div class="nav-item" data-page="bank"><span class="ic">🏦</span> Bank Accounts <span class="badge mono" id="navBank"></span></div>
-  <div class="nav-item" data-page="liability"><span class="ic">▢</span> Liabilities <span class="badge mono" id="navLiability"></span></div>
-  <div class="nav-item" data-page="card"><span class="ic">▭</span> Credit Cards <span class="badge mono" id="navCard"></span></div>
-  <div class="nav-item" data-page="analysis"><span class="ic">✦</span> Analysis</div>
-  <div class="nav-item" data-page="import"><span class="ic">⇪</span> Import Data</div>
-  <div class="nav-item" data-page="cloud"><span class="ic">☁</span> Cloud Sync <span class="badge mono" id="navCloud">●</span></div>
-  <div class="nav-spacer"></div>
-  <footer>data stored on this device only · <a style="color:var(--muted); cursor:pointer;" onclick="lockNow()">Lock app</a></footer>
-</nav>
-
-<main>
-  <div class="demo-banner" id="demoBanner">◆ Viewing DEMO DATA — this is sample data only. Switch to Real Data before entering your actual finances.</div>
-  <div class="topbar">
-    <div style="display:flex; align-items:center;">
-      <button class="menu-btn" id="menuBtn">☰</button>
-      <div>
-        <h2 id="pageTitle">Overview</h2>
-        <div class="t-sub" id="pageSub">Net worth and financial health at a glance</div>
-      </div>
-    </div>
-    <div class="clock mono" id="clock"></div>
-  </div>
-
-  <!-- OVERVIEW -->
-  <div class="page active" id="page-overview">
-    <div class="kpi-row" id="kpiRow"></div>
-    <div class="viz-row" id="vizRow"></div>
-    <div class="verdict-panel" id="verdictPanel"></div>
-  </div>
-
-  <!-- INCOME -->
-  <div class="page" id="page-income">
-    <div class="cat-head">
-      <div></div>
-      <div class="cat-total"><div class="ct-label">Total monthly income</div><div class="ct-value mono" id="incomeTotal" style="color:var(--green)"></div></div>
-    </div>
-    <section class="panel">
-      <div class="p-head"><h2>INCOME SOURCES</h2></div>
-      <div class="p-body">
-        <div class="entry-list" id="incomeBody"></div>
-        <button class="add-row" onclick="addRow('income')">+ add income source</button>
-      </div>
-    </section>
-  </div>
-
-  <!-- EXPENSE -->
-  <div class="page" id="page-expense">
-    <div class="cat-head">
-      <div></div>
-      <div class="cat-total"><div class="ct-label">Total monthly expenses</div><div class="ct-value mono" id="expenseTotal" style="color:var(--red)"></div></div>
-    </div>
-    <div class="cat-layout">
-      <section class="panel">
-        <div class="p-head"><h2>EXPENSE CATEGORIES</h2></div>
-        <div class="p-body">
-          <div class="entry-list" id="expenseBody"></div>
-          <button class="add-row" onclick="addRow('expense')">+ add expense</button>
-        </div>
-      </section>
-      <div class="viz-panel" style="align-items:stretch;">
-        <div class="v-title">Where it goes</div>
-        <div class="donut-wrap" id="expenseDonutWrap"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- TRANSFER -->
-  <div class="page" id="page-transfer">
-    <div class="cat-head">
-      <div></div>
-      <div class="cat-total"><div class="ct-label">Net cashflow</div><div class="ct-value mono" id="transferTotal"></div></div>
-    </div>
-    <section class="panel">
-      <div class="p-head"><h2>CASHFLOW / TRANSFERS <span class="mono" style="color:var(--dim); font-weight:400; font-size:0.72rem">· not counted as income or expense</span></h2></div>
-      <div class="p-body">
-        <div class="entry-list" id="transferBody"></div>
-        <button class="add-row" onclick="addRow('transfer')">+ add cashflow / transfer</button>
-      </div>
-    </section>
-    <div class="callout" style="margin-top:14px;">
-      Use this for money that moves without being real income or spending — UPI cashback, refunds, and similar one-off credits. It won't affect your savings rate or expense totals, but if you link an entry to a bank account, that account's balance still updates. Transfers between your own accounts go to <b>Internal Transfers</b> instead — see that page.
-    </div>
-  </div>
-
-  <!-- INTERNAL TRANSFER -->
-  <div class="page" id="page-internal">
-    <div class="cat-head">
-      <div></div>
-      <div class="cat-total"><div class="ct-label">Moved between your accounts</div><div class="ct-value mono" id="internalTotal" style="font-size:1.1rem; color:var(--blue);"></div></div>
-    </div>
-    <section class="panel">
-      <div class="p-head"><h2>INTERNAL TRANSFERS <span class="mono" style="color:var(--dim); font-weight:400; font-size:0.72rem">· between your own accounts, never income or expense</span></h2></div>
-      <div class="p-body">
-        <div class="entry-list" id="internalBody"></div>
-        <button class="add-row" onclick="addRow('internal')">+ add internal transfer</button>
-      </div>
-    </section>
-    <div class="callout" style="margin-top:14px;">
-      For money you moved between your own SBI / Kotak / ICICI / Axis accounts — self-transfers never count as income or expense, even when the bank SMS uses "credited" or "debited" wording. Set your bank-name keywords on the Cloud Sync page so auto-captured SMS lands here automatically instead of in Income or Expenses.
-    </div>
-  </div>
-
-  <!-- ASSET -->
-  <div class="page" id="page-asset">
-    <div class="cat-head">
-      <div></div>
-      <div class="cat-total">
-        <div class="ct-label">Total assets (incl. investments &amp; bank)</div>
-        <div class="ct-value mono" id="assetTotal" style="color:var(--green)"></div>
-        <div class="ic-note" style="margin:4px 0 0; text-align:right;" id="assetTotalBreakdown"></div>
-      </div>
-    </div>
-    <div class="cat-layout">
-      <div style="display:flex; flex-direction:column; gap:16px;">
-        <section class="panel">
-          <div class="p-head"><h2>ASSET LIST <span class="mono" style="color:var(--dim); font-weight:400; font-size:0.72rem">· manual entries</span></h2></div>
-          <div class="p-body">
-            <div class="entry-list" id="assetBody"></div>
-            <button class="add-row" onclick="addRow('asset')">+ add asset</button>
-          </div>
-        </section>
-        <section class="panel">
-          <div class="p-head"><h2>INVESTMENTS <span class="mono" style="color:var(--dim); font-weight:400; font-size:0.72rem">· stocks, mutual funds, bonds</span></h2></div>
-          <div class="p-body">
-            <div class="entry-list" id="investmentBody"></div>
-            <button class="add-row" onclick="addRow('investment')">+ add investment</button>
-          </div>
-        </section>
-      </div>
-      <div class="viz-panel" style="align-items:stretch;">
-        <div class="v-title">Allocation <span class="mono" style="color:var(--dim); font-weight:400; text-transform:none; letter-spacing:0;">· incl. investments &amp; bank</span></div>
-        <div class="donut-wrap" id="assetDonutWrap"></div>
-      </div>
-    </div>
-    <div class="callout" id="assetBankNote" style="margin-top:14px; cursor:pointer;" onclick="goToPage('bank')"></div>
-  </div>
-
-  <!-- BANK -->
-  <div class="page" id="page-bank">
-    <div class="cat-head">
-      <div></div>
-      <div class="cat-total"><div class="ct-label">Total bank balance</div><div class="ct-value mono" id="bankTotalEl" style="color:var(--blue)"></div></div>
-    </div>
-    <div class="cat-layout">
-      <section class="panel">
-        <div class="p-head"><h2>ACCOUNTS</h2></div>
-        <div class="p-body">
-          <div class="entry-list" id="bankBody"></div>
-          <button class="add-row" onclick="addBankAccount()">+ add account</button>
-        </div>
-      </section>
-      <div class="viz-panel" style="align-items:stretch;">
-        <div class="v-title">By account</div>
-        <div class="donut-wrap" id="bankDonutWrap"></div>
-      </div>
-    </div>
-    <div class="callout" style="margin-top:14px;">
-      Edit a balance directly any time to correct it manually. Balances also move automatically: link an Income/Expense row to an account (on those pages) and it adjusts the balance when added, edited, or removed — and auto-captured SMS transactions apply the same way if you set a default account on the Cloud Sync page. These balances already count toward your total assets — see them combined on the <a style="color:var(--blue); cursor:pointer;" onclick="goToPage('asset')">Assets page</a>, so there's no need to also list them manually there.
-    </div>
-  </div>
-
-  <!-- LIABILITY -->
-  <div class="page" id="page-liability">
-    <div class="cat-head">
-      <div></div>
-      <div class="cat-total"><div class="ct-label">Total liabilities</div><div class="ct-value mono" id="liabilityTotal" style="color:var(--red)"></div></div>
-    </div>
-    <section class="panel">
-      <div class="p-head"><h2>LIABILITIES <span class="mono" style="color:var(--dim); font-weight:400; font-size:0.72rem">· non-card debt</span></h2></div>
-      <div class="p-body">
-        <div class="entry-list" id="liabilityBody"></div>
-        <button class="add-row" onclick="addRow('liability')">+ add liability</button>
-      </div>
-    </section>
-  </div>
-
-  <!-- CARD -->
-  <div class="page" id="page-card">
-    <div class="cat-head">
-      <div></div>
-      <div class="cat-total"><div class="ct-label">Total card balance / limit</div><div class="ct-value mono" id="cardTotal"></div></div>
-    </div>
-    <div class="cat-layout">
-      <section class="panel">
-        <div class="p-head"><h2>CREDIT CARDS</h2></div>
-        <div class="p-body">
-          <div class="entry-list" id="cardBody"></div>
-          <button class="add-row" onclick="addRow('card')">+ add card</button>
-        </div>
-      </section>
-      <div class="viz-panel">
-        <div class="v-title">Overall utilization</div>
-        <div style="position:relative" id="cardGaugeWrap"></div>
-        <div class="gauge-sub">keep under 30%</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ANALYSIS -->
-  <div class="page" id="page-analysis">
-    <div class="verdict-panel" id="verdictPanel2" style="margin-bottom:20px;"></div>
-    <div class="analysis-grid" id="analysisGrid"></div>
-  </div>
-
-  <!-- IMPORT -->
-  <div class="page" id="page-import">
-    <div class="import-grid">
-
-      <div class="import-card full">
-        <h3>Try it with demo data</h3>
-        <div class="ic-note">Loads a realistic sample household — income, expenses, assets, bank accounts, liabilities, and credit cards — into a separate <b>Demo Data</b> mode, so you can see every dashboard, chart, and gauge populated without touching your real numbers. Switch between Real and Demo any time using the toggle at the top of the sidebar. "Clear" only affects whichever mode you're currently viewing.</div>
-        <div class="imp-row">
-          <button class="btn" onclick="loadDemoData()">Load demo data</button>
-          <button class="btn ghost" onclick="clearAllData()">Clear current mode's data</button>
-        </div>
-        <div class="imp-status" id="demoStatus"></div>
-      </div>
-
-      <div class="import-card">
-        <h3>Quick paste</h3>
-        <div class="ic-note">Paste rows from a spreadsheet, notes app, or bank export. One entry per line.</div>
-        <span class="field-label">Category</span>
-        <select class="imp-select" id="pasteCategory">
-          <option value="income">Income</option>
-          <option value="expense">Expenses</option>
-          <option value="transfer">Cashflow / Transfer</option>
-          <option value="internal">Internal Transfer</option>
-          <option value="asset">Assets</option>
-          <option value="liability">Liabilities</option>
-          <option value="card">Credit Cards</option>
-        </select>
-        <div class="csv-example" id="pasteFormatHint">Salary, 60000
-Freelance, 15000</div>
-        <textarea class="imp-text" id="pasteArea" placeholder="Name, Amount&#10;one entry per line"></textarea>
-        <div class="imp-row">
-          <label class="chk"><input type="checkbox" id="pasteAppend" checked> Append to existing (uncheck to replace)</label>
-        </div>
-        <div class="imp-row">
-          <button class="btn" onclick="importPaste()">Parse &amp; add</button>
-        </div>
-        <div class="imp-status" id="pasteStatus"></div>
-      </div>
-
-      <div class="import-card">
-        <h3>Upload CSV</h3>
-        <div class="ic-note">Upload a .csv file for one category at a time. First row can be a header — it's detected automatically.</div>
-        <span class="field-label">Category</span>
-        <select class="imp-select" id="csvCategory">
-          <option value="income">Income (name, amount)</option>
-          <option value="expense">Expenses (name, amount)</option>
-          <option value="transfer">Cashflow / Transfer (name, amount, direction)</option>
-          <option value="internal">Internal Transfer (name, amount, direction)</option>
-          <option value="asset">Assets (name, amount)</option>
-          <option value="liability">Liabilities (name, amount)</option>
-          <option value="card">Credit Cards (name, balance, limit)</option>
-        </select>
-        <label class="file-drop" id="csvDrop">
-          <span id="csvDropLabel">Click to choose a .csv file, or drag one here</span>
-          <input type="file" id="csvFile" accept=".csv,text/csv">
-        </label>
-        <div class="imp-row">
-          <label class="chk"><input type="checkbox" id="csvAppend" checked> Append to existing (uncheck to replace)</label>
-        </div>
-        <div class="imp-status" id="csvStatus"></div>
-      </div>
-
-      <div class="import-card full">
-        <h3>Full backup</h3>
-        <div class="ic-note">Export everything as one JSON file, or restore from a previously exported file. Restoring replaces all current data.</div>
-        <div class="imp-row">
-          <button class="btn ghost" onclick="exportBackup()">⬇ Download backup (.json)</button>
-          <label class="btn ghost" style="cursor:pointer;">
-            ⬆ Restore from backup
-            <input type="file" id="jsonFile" accept=".json,application/json" style="display:none;">
-          </label>
-        </div>
-        <div class="imp-status" id="jsonStatus"></div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- CLOUD SYNC -->
-  <div class="page" id="page-cloud">
-    <div class="callout" id="cloudModeNote" style="display:none; margin-bottom:14px;">
-      Cloud sync and SMS auto-capture are paused while viewing Demo Data — switch to Real Data (top-left) to use them.
-    </div>
-    <div class="cloud-status-bar" id="cloudStatusBar">
-      <div class="cs-dot" id="cloudDot"></div>
-      <div>
-        <div class="cs-text" id="cloudStatusText">Not connected</div>
-        <div class="cs-sub" id="cloudStatusSub">Connect a Firestore project to sync your data and categorization settings across devices</div>
-      </div>
-      <div class="cs-spacer"></div>
-      <label class="chk" style="margin-right:6px;">
-        <input type="checkbox" id="autoSyncToggle" onchange="toggleAutoSync(this.checked)"> Live sync
-      </label>
-      <button class="btn ghost" onclick="pushToCloud(true)">Push</button>
-      <button class="btn ghost" onclick="pullFromCloud()">Pull</button>
-    </div>
-
-    <div class="import-grid">
-      <div class="import-card full">
-        <h3>Your Identity — sync by phone number</h3>
-        <div class="ic-note">
-          Verify your phone once and it becomes your automatic sync identity — no key to invent, remember, or share. The Firebase config below is already pre-filled in this file, so on a new device this is the <b>only step</b> you need: verify with the <b>same number</b> and it finds this same data there.
-        </div>
-
-        <div id="identityVerified" style="display:none;">
-          <div class="imp-status ok" id="identitySignedInAs" style="margin-bottom:10px;"></div>
-          <button class="btn ghost" onclick="signOutIdentity()">Use a different number</button>
-        </div>
-
-        <div id="identityUnverified">
-          <div id="identityStep1">
-            <input class="imp-select-text" id="identityPhone" type="tel" placeholder="+91 98765 43210">
-            <div class="imp-row">
-              <button class="btn" onclick="sendIdentityOtp()">Send OTP</button>
-            </div>
-          </div>
-          <div id="identityStep2" style="display:none;">
-            <input class="imp-select-text" id="identityOtp" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code">
-            <div class="imp-row">
-              <button class="btn" onclick="verifyIdentityOtp()">Verify</button>
-              <button class="btn-cancel" onclick="backToIdentityPhoneStep()">Use a different number</button>
-            </div>
-          </div>
-          <div class="imp-status" id="identityStatus"></div>
-        </div>
-      </div>
-
-      <div class="import-card full">
-        <h3>Firebase project <span class="mono" style="color:var(--dim); font-weight:400; font-size:0.72rem">· pre-filled — only edit if using a different project</span></h3>
-        <ol class="steps">
-          <li>This config is already filled in below for this file's Firebase project — you don't need to touch it unless you're switching to a different project entirely.</li>
-          <li>To connect: verify your identity above (recommended), or type your own <b>Sync Key</b> below, then hit Connect.</li>
-          <li>On a new device, opening this same file already has the config ready — just verify your identity again there.</li>
-        </ol>
-        <span class="field-label">Firebase config <span class="mono" style="color:var(--dim); text-transform:none; letter-spacing:0;">(pre-filled from this file — edit only for a different project)</span></span>
-        <textarea class="imp-text" id="fbConfig" placeholder='{"apiKey": "...", "authDomain": "...", "projectId": "...", "appId": "..."}'></textarea>
-        <span class="field-label">Sync key <span class="mono" style="color:var(--dim); text-transform:none; letter-spacing:0;">— auto-filled once you verify your identity above, or set your own</span></span>
-        <input class="imp-select-text" id="fbSyncKey" placeholder="e.g. my-household-2026">
-        <div class="imp-row">
-          <button class="btn" onclick="connectCloud()">Connect</button>
-          <button class="btn ghost" onclick="forgetCloud()">Disconnect &amp; forget</button>
-        </div>
-        <div class="imp-status" id="cloudConnectStatus"></div>
-        <div class="callout">
-          Firestore's client config isn't a secret, but your data still needs protecting. Verifying your identity above lets you use real per-user Firestore rules (only your signed-in phone number can read/write your document) — see the updated rules example below. If you skip identity verification and type a Sync Key manually instead, that key becomes your only protection, so keep it obscure.
-        </div>
-      </div>
-
-      <div class="import-card full">
-        <h3>Auto-log bank SMS via iPhone Shortcut</h3>
-        <div class="ic-note">
-          An iPhone Automation watches incoming bank texts for <b>credit</b>, <b>debit</b>, or <b>transfer</b>, extracts the amount, and posts it to a separate <code>inbox</code> queue in Firestore — never your full ledger doc. This app watches that queue live and routes each item automatically, checked in this order: mentions one of your other own banks → <b>Internal Transfer</b> (regardless of "credited"/"debited" wording); otherwise credits matching your salary keywords → <b>Income</b>; any other credit or transfer → <b>Cashflow / Transfers</b>; everything else → <b>Expenses</b>. Nothing is ever overwritten.
-          Build <b>one Automation per bank account</b> (one for SBI, one for Kotak, one for Axis, etc.) — each just hardcodes which account it belongs to, so every SMS lands against the right balance automatically, whichever account it's from.
-        </div>
-
-        <div class="imp-row">
-          <label class="chk"><input type="checkbox" id="inboxCaptureToggle" onchange="toggleInboxCapture(this.checked)"> Watch for incoming SMS transactions</label>
-        </div>
-
-        <span class="field-label">Treat credits mentioning any of these as salary → Income (comma-separated)</span>
-        <input class="imp-select-text" id="salaryKeywords" placeholder="salary, vividminds" value="salary, vividminds">
-
-        <span class="field-label">Your other banks — if an SMS mentions one of these, it's an Internal Transfer, regardless of "credited"/"debited" wording (comma-separated)</span>
-        <input class="imp-select-text" id="internalKeywords" placeholder="SBI, Kotak, ICICI, Axis">
-        <div class="csv-example" id="internalKeywordsHint" style="white-space:pre; font-size:0.7rem;"></div>
-
-        <span class="field-label">Your account names — use exactly as shown in each Shortcut's "account" field</span>
-        <div class="csv-example" id="accountNamesHint" style="white-space:pre;"></div>
-
-        <span class="field-label">Fallback account <span class="mono" style="color:var(--dim); text-transform:none; letter-spacing:0;">— only used if a Shortcut doesn't send an account name</span></span>
-        <select class="imp-select" id="smsAccountSelect"></select>
-
-        <span class="field-label">1 — POST URL for Shortcuts "Get Contents of URL" (same for every bank's Automation)</span>
-        <input class="imp-select-text" id="shortcutUrl" readonly placeholder="Connect above first to generate this">
-        <span class="field-label">2 — Request Body (JSON) — set "account" to that Automation's exact account name, fill amount/type/raw from Shortcuts variables</span>
-        <textarea class="imp-text" id="shortcutBody" readonly style="min-height:170px;"></textarea>
-
-        <span class="field-label">3 — Build one Automation per bank account</span>
-        <ol class="steps">
-          <li>Shortcuts app → Automation → + → Personal Automation → <b>Message</b> → set sender to that bank's SMS ID (leave "Contains" blank if the sender is bank-only) → Run Immediately.</li>
-          <li>Add action <b>Get Text from Input</b> (the incoming message).</li>
-          <li>Add <b>Match Text</b> to detect the keyword: pattern <code>credit(ed)?|debit(ed)?|transfer(red)?</code> — if no match, stop the Shortcut here.</li>
-          <li>Add <b>Match Text</b> again to pull the amount: pattern <code>(?:Rs\.?|INR|₹)\s?[0-9,]+(?:\.[0-9]{1,2})?</code>, then strip commas/currency symbols so it's a plain number.</li>
-          <li>Set a <b>Text</b> variable for type: <code>transfer</code> if the message contains "transfer" or "transferred"; otherwise <code>credit</code> if it contains "credited"; otherwise <code>debit</code>. (The app decides Income vs. Cashflow/Transfer for you from there — a "credit" only becomes Income if it matches your salary keywords above; otherwise it's filed as Cashflow/Transfer along with every "transfer".)</li>
-          <li>Set a <b>Text</b> variable for account: type it exactly as one of the names shown in the box above (e.g. <code>SBI Savings a/c</code>) — this is the one thing that differs between each bank's Automation.</li>
-          <li>Add <b>Get Contents of URL</b>: Method <b>POST</b> → URL from box 1 above → Headers <code>Content-Type: application/json</code> → Request Body <b>JSON</b>, matching the template in box 2 with your amount/type/account/message variables inserted.</li>
-          <li>Repeat steps 1–7 for each remaining bank account, changing only the sender and the account name.</li>
-        </ol>
-
-        <span class="field-label">4 — Firestore rules (paste into Firestore → Rules)</span>
-        <div class="csv-example" style="white-space:pre; font-size:0.7rem;">match /databases/{db}/documents {
-  match /ledgerApp/{syncKey} {
-    allow read, write: if true; // tighten to your syncKey pattern
-  }
-  match /ledgerApp/{syncKey}/inbox/{docId} {
-    allow create: if request.resource.data.keys().hasAll(['raw','amount','type','createdAt']);
-    allow read, delete: if true;
-  }
-}</div>
-        <div class="callout">
-          These rules are intentionally minimal-friction for a personal setup — an obscure Sync Key is your main protection. <b>If you verified your Identity above</b> (recommended), use this tighter version instead, which locks the main document to only your signed-in phone number:
-        </div>
-        <div class="csv-example" style="white-space:pre; font-size:0.7rem; margin-top:8px;">match /databases/{db}/documents {
-  match /ledgerApp/{syncKey} {
-    allow read, write: if request.auth != null && request.auth.uid == syncKey;
-  }
-  match /ledgerApp/{syncKey}/inbox/{docId} {
-    allow create: if request.resource.data.keys().hasAll(['raw','amount','type','createdAt']);
-    allow read, delete: if true;
-  }
-}</div>
-        <div class="callout">
-          Note the <code>inbox</code> subcollection stays open either way — the iPhone Shortcut posts to it directly over plain HTTP with no Firebase sign-in, so it can't satisfy an <code>auth != null</code> check. Its real protection is that your Sync Key (or identity ID) in the URL is a long, unguessable string, not something enforced by the rules themselves.
-        </div>
-
-        <span class="field-label">Recent auto-captured transactions</span>
-        <div id="inboxLogList" style="max-height:180px; overflow-y:auto;"></div>
-      </div>
-
-      <div class="import-card full">
-        <h3>App Lock — sign in with mobile OTP</h3>
-        <div class="ic-note">
-          Adds a mobile-number + OTP screen before the app opens, using <b>Phone Authentication</b> on the same Firebase project as Cloud Sync above. Two things to set up first: in Firebase Console → Authentication → Sign-in method, enable <b>Phone</b>; and under Authentication → Settings → Authorized domains, add the domain this file is hosted on. <b>Note:</b> this is a convenience lock for your own device, not a secure multi-user login system — someone with direct access to this browser's storage could still bypass it, and if you're viewing this inside a sandboxed preview domain, OTP sending will likely fail until you download and host the file on your own domain.
-        </div>
-        <div class="imp-row">
-          <label class="chk"><input type="checkbox" id="securityEnabledToggle" onchange="toggleSecurityLock(this.checked)"> Require OTP to open the app</label>
-        </div>
-        <div class="imp-row">
-          <label class="chk"><input type="checkbox" id="lockStayUnlocked" checked> Stay unlocked on this device after verifying</label>
-        </div>
-        <div class="imp-status" id="securityStatus"></div>
-      </div>
-    </div>
-  </div>
-
-</main>
-
-<!-- Loaded from a separate file kept OUT of git (see .gitignore). Missing this file is fine —
-     the app just falls back to manual config paste on the Cloud Sync page. -->
-<script src="firebase-config.js"></script>
-
-<script>
-// Works inside Claude's artifact preview (window.storage) AND as a standalone downloaded file
-// (falls back to real localStorage, since window.storage only exists in the Claude sandbox).
-const storageShim = {
-  async get(key, shared){
-    if(window.storage) return window.storage.get(key, shared);
-    const v = localStorage.getItem(key);
-    if(v === null) throw new Error('key not found: ' + key);
-    return { key, value: v, shared: !!shared };
-  },
-  async set(key, value, shared){
-    if(window.storage) return window.storage.set(key, value, shared);
-    localStorage.setItem(key, value);
-    return { key, value, shared: !!shared };
-  },
-  async delete(key, shared){
-    if(window.storage) return window.storage.delete(key, shared);
-    localStorage.removeItem(key);
-    return { key, deleted: true, shared: !!shared };
-  },
-  async list(prefix, shared){
-    if(window.storage) return window.storage.list(prefix, shared);
-    const keys = Object.keys(localStorage).filter(k => !prefix || k.startsWith(prefix));
-    return { keys, prefix, shared: !!shared };
-  }
-};
-
-// Firebase config is NOT hardcoded here on purpose — it's loaded from firebase-config.js,
-// a separate file you keep out of git (see .gitignore). If that file isn't present,
-// window.DEFAULT_FIREBASE_CONFIG stays undefined and the app falls back to manual paste.
-
-const STORE_KEY = 'ledger-finance-v2';
-const DEMO_STORE_KEY = 'ledger-finance-demo-v1';
-const MODE_KEY = 'ledger-mode';
-let currentMode = 'real';
-
-function emptyDataset(){
-  return { income:[], expense:[], transfer:[], internal:[], asset:[], investment:[], liability:[], card:[], bank:[] };
-}
-function isDatasetEmpty(d){
-  return ['income','expense','transfer','internal','asset','investment','liability','card','bank'].every(k => !d[k] || d[k].length===0);
-}
-function buildDemoDataset(){
-  return {
-    bank: [
-      { id:'acc_sbi', name:'SBI Savings a/c', balance:46000 },
-      { id:'acc_kotak', name:'Kotak 811 savings a/c', balance:14500 },
-      { id:'acc_axis', name:'Axis deposits a/c', balance:5200 }
-    ],
-    income: [
-      { name:'Salary', amount:85000, account:'acc_sbi', _appliedAmt:85000 },
-      { name:'Freelance design work', amount:12000, account:'acc_kotak', _appliedAmt:12000 }
-    ],
-    expense: [
-      { name:'Rent', amount:25000, account:'acc_sbi', _appliedAmt:25000 },
-      { name:'Groceries', amount:8000, account:'acc_sbi', _appliedAmt:8000 },
-      { name:'Utilities', amount:3200, account:'' },
-      { name:'Dining out', amount:4500, account:'' },
-      { name:'Transport', amount:2800, account:'' },
-      { name:'Subscriptions', amount:1200, account:'' }
-    ],
-    transfer: [
-      { name:'UPI cashback', amount:150, direction:'in', account:'acc_sbi', _appliedAmt:150 },
-      { name:'Sent to Ravi (rent split)', amount:5000, direction:'out', account:'acc_kotak', _appliedAmt:5000 }
-    ],
-    internal: [
-      { name:'Self-transfer to Kotak', amount:10000, direction:'out', account:'acc_sbi', _appliedAmt:10000 },
-      { name:'Self-transfer from SBI', amount:10000, direction:'in', account:'acc_kotak', _appliedAmt:10000 }
-    ],
-    asset: [
-      { name:'Gold', amount:40000 }
-    ],
-    investment: [
-      { name:'Mutual funds', amount:150000 },
-      { name:'Stocks / equity', amount:60000 },
-      { name:'Bonds', amount:25000 }
-    ],
-    liability: [
-      { name:'Car loan', amount:180000 },
-      { name:'Personal loan', amount:50000 }
-    ],
-    card: [
-      { name:'HDFC Regalia', balance:48000, limit:150000 },
-      { name:'Amex MRCC', balance:8000, limit:200000 }
-    ]
-  };
-}
-
-let data = emptyDataset();
-const PALETTE = ['#4FD1A5','#5B9FFF','#F5B942','#B98CE8','#FF6B5C','#6EE7E7','#F0A8D0','#8FBF6B'];
-function uid(){ return Math.random().toString(36).slice(2,9); }
-
-function storeKeyForMode(mode){ return mode==='real' ? STORE_KEY : DEMO_STORE_KEY; }
-
-async function load(){
-  await checkAndShowLock();
-
-  try{
-    const m = await storageShim.get(MODE_KEY, false);
-    if(m && m.value === 'demo') currentMode = 'demo';
-  }catch(e){}
-
-  try{
-    const res = await storageShim.get(storeKeyForMode(currentMode), false);
-    data = (res && res.value) ? Object.assign(emptyDataset(), JSON.parse(res.value)) : emptyDataset();
-  }catch(e){ data = emptyDataset(); }
-
-  if(currentMode === 'demo' && isDatasetEmpty(data)){
-    data = buildDemoDataset();
-    try{ await storageShim.set(DEMO_STORE_KEY, JSON.stringify(data), false); }catch(e){}
-  }
-
-  try{
-    const r = await storageShim.get('ledger-sms-account', false);
-    if(r && r.value){ pendingSmsAccountId = r.value; }
-  }catch(e){}
-  try{
-    const rk = await storageShim.get('ledger-salary-keywords', false);
-    if(rk && rk.value){ document.getElementById('salaryKeywords').value = rk.value; }
-  }catch(e){}
-  try{
-    const rik = await storageShim.get('ledger-internal-keywords', false);
-    if(rik && rik.value){ document.getElementById('internalKeywords').value = rik.value; }
-  }catch(e){}
-
-  updateModeUI();
-  render();
-  renderInboxLog();
-  if(window.DEFAULT_FIREBASE_CONFIG){
-    document.getElementById('fbConfig').value = JSON.stringify(window.DEFAULT_FIREBASE_CONFIG, null, 2);
-  }
-  if(currentMode === 'real'){ await restoreIdentity(); await restoreCloudSettings(); }
-}
-async function save(){
-  try{ await storageShim.set(storeKeyForMode(currentMode), JSON.stringify(data), false); }
-  catch(e){ console.error('save failed', e); }
-  if(currentMode === 'real'){ scheduleCloudPush(); }
-}
-
-async function switchMode(mode){
-  if(mode === currentMode) return;
-  try{ await storageShim.set(storeKeyForMode(currentMode), JSON.stringify(data), false); }catch(e){}
-
-  if(currentMode === 'real'){
-    window.__fb.stopListen();
-    window.__fb.stopInbox();
-  }
-
-  currentMode = mode;
-  try{ await storageShim.set(MODE_KEY, mode, false); }catch(e){}
-
-  try{
-    const res = await storageShim.get(storeKeyForMode(mode), false);
-    data = (res && res.value) ? Object.assign(emptyDataset(), JSON.parse(res.value)) : emptyDataset();
-  }catch(e){ data = emptyDataset(); }
-
-  if(mode === 'demo' && isDatasetEmpty(data)){
-    data = buildDemoDataset();
-    try{ await storageShim.set(DEMO_STORE_KEY, JSON.stringify(data), false); }catch(e){}
-  }
-
-  editing = { income:null, expense:null, transfer:null, internal:null, asset:null, investment:null, liability:null, card:null, bank:null };
-  updateModeUI();
-  render();
-
-  if(currentMode === 'real' && cloudConnected){
-    if(cloudAutoSync) toggleAutoSync(true);
-    if(inboxAutoCapture) toggleInboxCapture(true);
-  }
-}
-
-function updateModeUI(){
-  document.querySelectorAll('#modeSwitch button').forEach(b=>b.classList.remove('active'));
-  const activeBtn = document.querySelector(`#modeSwitch button.${currentMode}`);
-  if(activeBtn) activeBtn.classList.add('active');
-  const banner = document.getElementById('demoBanner');
-  if(banner) banner.classList.toggle('show', currentMode === 'demo');
-  const disable = currentMode !== 'real';
-  const autoSyncEl = document.getElementById('autoSyncToggle');
-  const inboxEl = document.getElementById('inboxCaptureToggle');
-  if(autoSyncEl) autoSyncEl.disabled = disable;
-  if(inboxEl) inboxEl.disabled = disable;
-  const cloudNote = document.getElementById('cloudModeNote');
-  if(cloudNote) cloudNote.style.display = disable ? 'block' : 'none';
-}
-
-function fmt(n){
-  n = Number(n)||0;
-  const neg = n<0; n=Math.abs(n);
-  return (neg?'-':'') + '₹' + n.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0});
-}
-function sum(arr,key){ return arr.reduce((s,r)=>s+(Number(r[key])||0),0); }
-
-let editing = { income:null, expense:null, transfer:null, internal:null, asset:null, investment:null, liability:null, card:null, bank:null };
-
-function addRow(type){
-  if(type==='income') data.income.push({name:'',amount:0,account:''});
-  if(type==='expense') data.expense.push({name:'',amount:0,account:''});
-  if(type==='transfer') data.transfer.push({name:'',amount:0,direction:'in',account:''});
-  if(type==='internal') data.internal.push({name:'',amount:0,direction:'in',account:''});
-  if(type==='asset') data.asset.push({name:'',amount:0});
-  if(type==='investment') data.investment.push({name:'',amount:0});
-  if(type==='liability') data.liability.push({name:'',amount:0});
-  if(type==='card') data.card.push({name:'',balance:0,limit:0});
-  editing[type] = data[type].length - 1;
-  render();
-}
-function findAccount(id){ return data.bank.find(a=>a.id===id); }
-function reverseAccountApplied(row, sign){
-  if(row.account && row._appliedAmt){
-    const acct = findAccount(row.account);
-    if(acct) acct.balance -= sign*row._appliedAmt;
-  }
-  row._appliedAmt = 0;
-}
-function applyAccountForRow(row, sign){
-  if(row.account){
-    const acct = findAccount(row.account);
-    if(acct){ acct.balance += sign*(row.amount||0); row._appliedAmt = row.amount||0; return; }
-  }
-  row._appliedAmt = 0;
-}
-function signForType(type, row){
-  if(type==='income') return 1;
-  if(type==='expense') return -1;
-  if(type==='transfer' || type==='internal') return (row && row.direction==='out') ? -1 : 1;
-  return 1;
-}
-function delRow(type, idx){
-  if(type==='income' || type==='expense' || type==='transfer' || type==='internal'){
-    reverseAccountApplied(data[type][idx], signForType(type, data[type][idx]));
-  }
-  data[type].splice(idx,1);
-  if(editing[type]===idx) editing[type]=null;
-  render(); save();
-}
-function addBankAccount(){
-  data.bank.push({id:'acc_'+uid(), name:'', balance:0});
-  editing.bank = data.bank.length - 1;
-  render();
-}
-function delBankAccount(idx){
-  const acct = data.bank[idx];
-  ['income','expense'].forEach(t=>{
-    data[t].forEach(r=>{ if(r.account===acct.id){ r.account=''; r._appliedAmt=0; } });
-  });
-  data.bank.splice(idx,1);
-  if(editing.bank===idx) editing.bank=null;
-  render(); save();
-}
-function escapeHtml(s){
-  return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-// ---- Edit state controls ----
-function startEdit(type, idx){ editing[type] = idx; render(); }
-function cancelEdit(type, idx){
-  const row = data[type][idx];
-  const isBlank = type==='card' ? (!row.name && !row.balance && !row.limit)
-                : type==='bank' ? (!row.name && !row.balance)
-                : (!row.name && !row.amount);
-  editing[type] = null;
-  if(isBlank) data[type].splice(idx,1);
-  render();
-}
-function confirmDelete(type, idx){
-  const row = type==='bank' ? data.bank[idx] : data[type][idx];
-  const label = (row && row.name) ? row.name : 'this entry';
-  if(confirm(`Remove "${label}"? This can't be undone.`)){
-    if(type==='bank'){ delBankAccount(idx); } else { delRow(type, idx); }
-  }
-}
-function saveEdit(type, idx){
-  const row = data[type][idx];
-  const sign = signForType(type, row);
-  const nameEl = document.getElementById(`ed-${type}-${idx}-name`);
-  const amtEl = document.getElementById(`ed-${type}-${idx}-amount`);
-  const acctEl = document.getElementById(`ed-${type}-${idx}-account`);
-  reverseAccountApplied(row, sign);
-  row.name = nameEl.value.trim();
-  row.amount = parseFloat(amtEl.value)||0;
-  row.account = acctEl ? acctEl.value : '';
-  applyAccountForRow(row, signForType(type, row));
-  editing[type] = null;
-  render(); save();
-}
-function saveTransferLikeEdit(type, idx){
-  const row = data[type][idx];
-  reverseAccountApplied(row, signForType(type, row));
-  const nameEl = document.getElementById(`ed-${type}-${idx}-name`);
-  const amtEl = document.getElementById(`ed-${type}-${idx}-amount`);
-  const dirEl = document.getElementById(`ed-${type}-${idx}-direction`);
-  const acctEl = document.getElementById(`ed-${type}-${idx}-account`);
-  row.name = nameEl.value.trim();
-  row.amount = parseFloat(amtEl.value)||0;
-  row.direction = dirEl.value;
-  row.account = acctEl.value;
-  applyAccountForRow(row, signForType(type, row));
-  editing[type] = null;
-  render(); save();
-}
-function saveSimpleEdit(type, idx){
-  const nameEl = document.getElementById(`ed-${type}-${idx}-name`);
-  const amtEl = document.getElementById(`ed-${type}-${idx}-amount`);
-  data[type][idx].name = nameEl.value.trim();
-  data[type][idx].amount = parseFloat(amtEl.value)||0;
-  editing[type] = null;
-  render(); save();
-}
-function saveCardEdit(idx){
-  const n = document.getElementById(`ed-card-${idx}-name`);
-  const b = document.getElementById(`ed-card-${idx}-balance`);
-  const l = document.getElementById(`ed-card-${idx}-limit`);
-  data.card[idx].name = n.value.trim();
-  data.card[idx].balance = parseFloat(b.value)||0;
-  data.card[idx].limit = parseFloat(l.value)||0;
-  editing.card = null;
-  render(); save();
-}
-function saveBankEdit(idx){
-  const n = document.getElementById(`ed-bank-${idx}-name`);
-  const b = document.getElementById(`ed-bank-${idx}-balance`);
-  data.bank[idx].name = n.value.trim();
-  data.bank[idx].balance = parseFloat(b.value)||0;
-  editing.bank = null;
-  render(); save();
-}
-
-function accountOptionsHtml(selected){
-  let opts = `<option value="">— none —</option>`;
-  data.bank.forEach(a=>{
-    opts += `<option value="${a.id}" ${a.id===selected?'selected':''}>${escapeHtml(a.name||'Unnamed')}</option>`;
-  });
-  return opts;
-}
-
-function renderIncomeExpenseList(type, bodyId){
-  const el = document.getElementById(bodyId);
-  const rows = data[type];
-  if(rows.length===0){ el.innerHTML = `<div class="empty">No entries yet — use the button below to add one.</div>`; return; }
-  el.innerHTML = rows.map((r,i)=>{
-    if(editing[type]===i){
-      return `
-      <div class="entry-edit-row">
-        <div class="ee-field"><span class="ee-label">Name</span><input id="ed-${type}-${i}-name" type="text" value="${escapeHtml(r.name)}" placeholder="Name" autofocus></div>
-        <div class="ee-field"><span class="ee-label">Amount</span><input id="ed-${type}-${i}-amount" type="number" step="0.01" value="${r.amount}"></div>
-        <div class="ee-field"><span class="ee-label">Account</span><select id="ed-${type}-${i}-account">${accountOptionsHtml(r.account)}</select></div>
-        <div class="entry-edit-actions">
-          <button class="btn-save" onclick="saveEdit('${type}',${i})">Save</button>
-          <button class="btn-cancel" onclick="cancelEdit('${type}',${i})">Cancel</button>
-        </div>
-      </div>`;
-    }
-    const acct = findAccount(r.account);
-    return `
-    <div class="entry-row">
-      <div class="e-main">
-        <div class="e-name">${escapeHtml(r.name||'Unnamed')}</div>
-        <div class="e-amount">${fmt(r.amount)}${acct?' · '+escapeHtml(acct.name||'account'):''}</div>
-      </div>
-      <div class="entry-actions">
-        <button class="icon-btn" title="Edit" onclick="startEdit('${type}',${i})">✎</button>
-        <button class="icon-btn danger" title="Remove" onclick="confirmDelete('${type}',${i})">🗑</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function renderTransferLikeList(type, bodyId, emptyText, namePlaceholder){
-  const el = document.getElementById(bodyId);
-  const rows = data[type];
-  if(rows.length===0){ el.innerHTML = `<div class="empty">${emptyText}</div>`; return; }
-  el.innerHTML = rows.map((r,i)=>{
-    if(editing[type]===i){
-      return `
-      <div class="entry-edit-row">
-        <div class="ee-field"><span class="ee-label">Name</span><input id="ed-${type}-${i}-name" type="text" value="${escapeHtml(r.name)}" placeholder="${namePlaceholder}" autofocus></div>
-        <div class="ee-field"><span class="ee-label">Amount</span><input id="ed-${type}-${i}-amount" type="number" step="0.01" value="${r.amount}"></div>
-        <div class="ee-field"><span class="ee-label">Direction</span>
-          <select id="ed-${type}-${i}-direction">
-            <option value="in" ${r.direction!=='out'?'selected':''}>Received (+)</option>
-            <option value="out" ${r.direction==='out'?'selected':''}>Sent (−)</option>
-          </select>
-        </div>
-        <div class="ee-field"><span class="ee-label">Account</span><select id="ed-${type}-${i}-account">${accountOptionsHtml(r.account)}</select></div>
-        <div class="entry-edit-actions">
-          <button class="btn-save" onclick="saveTransferLikeEdit('${type}',${i})">Save</button>
-          <button class="btn-cancel" onclick="cancelEdit('${type}',${i})">Cancel</button>
-        </div>
-      </div>`;
-    }
-    const acct = findAccount(r.account);
-    const out = r.direction === 'out';
-    return `
-    <div class="entry-row">
-      <div class="e-main">
-        <div class="e-name">${escapeHtml(r.name||'Unnamed')}</div>
-        <div class="e-amount" style="color:${out?'var(--red)':'var(--green)'}">${out?'−':'+'}${fmt(r.amount)}${acct?' · '+escapeHtml(acct.name||'account'):''}</div>
-      </div>
-      <div class="entry-actions">
-        <button class="icon-btn" title="Edit" onclick="startEdit('${type}',${i})">✎</button>
-        <button class="icon-btn danger" title="Remove" onclick="confirmDelete('${type}',${i})">🗑</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function renderSimpleList(type, bodyId){
-  const el = document.getElementById(bodyId);
-  const rows = data[type];
-  if(rows.length===0){ el.innerHTML = `<div class="empty">No entries yet — use the button below to add one.</div>`; return; }
-  el.innerHTML = rows.map((r,i)=>{
-    if(editing[type]===i){
-      return `
-      <div class="entry-edit-row">
-        <div class="ee-field"><span class="ee-label">Name</span><input id="ed-${type}-${i}-name" type="text" value="${escapeHtml(r.name)}" placeholder="Name" autofocus></div>
-        <div class="ee-field"><span class="ee-label">Amount</span><input id="ed-${type}-${i}-amount" type="number" step="0.01" value="${r.amount}"></div>
-        <div class="entry-edit-actions">
-          <button class="btn-save" onclick="saveSimpleEdit('${type}',${i})">Save</button>
-          <button class="btn-cancel" onclick="cancelEdit('${type}',${i})">Cancel</button>
-        </div>
-      </div>`;
-    }
-    return `
-    <div class="entry-row">
-      <div class="e-main">
-        <div class="e-name">${escapeHtml(r.name||'Unnamed')}</div>
-        <div class="e-amount">${fmt(r.amount)}</div>
-      </div>
-      <div class="entry-actions">
-        <button class="icon-btn" title="Edit" onclick="startEdit('${type}',${i})">✎</button>
-        <button class="icon-btn danger" title="Remove" onclick="confirmDelete('${type}',${i})">🗑</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function renderBankList(){
-  const el = document.getElementById('bankBody');
-  const rows = data.bank;
-  if(rows.length===0){ el.innerHTML = `<div class="empty">No accounts yet — use the button below to add one.</div>`; return; }
-  el.innerHTML = rows.map((r,i)=>{
-    if(editing.bank===i){
-      return `
-      <div class="entry-edit-row">
-        <div class="ee-field"><span class="ee-label">Account name</span><input id="ed-bank-${i}-name" type="text" value="${escapeHtml(r.name)}" placeholder="Account name" autofocus></div>
-        <div class="ee-field"><span class="ee-label">Balance</span><input id="ed-bank-${i}-balance" type="number" step="0.01" value="${r.balance}"></div>
-        <div class="entry-edit-actions">
-          <button class="btn-save" onclick="saveBankEdit(${i})">Save</button>
-          <button class="btn-cancel" onclick="cancelEdit('bank',${i})">Cancel</button>
-        </div>
-      </div>`;
-    }
-    return `
-    <div class="entry-row">
-      <div class="e-main">
-        <div class="e-name">${escapeHtml(r.name||'Unnamed')}</div>
-        <div class="e-amount">${fmt(r.balance)}</div>
-      </div>
-      <div class="entry-actions">
-        <button class="icon-btn" title="Edit" onclick="startEdit('bank',${i})">✎</button>
-        <button class="icon-btn danger" title="Remove" onclick="confirmDelete('bank',${i})">🗑</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function renderCardList(){
-  const el = document.getElementById('cardBody');
-  const rows = data.card;
-  if(rows.length===0){ el.innerHTML = `<div class="empty">No cards yet — use the button below to add one.</div>`; return; }
-  el.innerHTML = rows.map((r,i)=>{
-    if(editing.card===i){
-      return `
-      <div class="entry-edit-row">
-        <div class="ee-field"><span class="ee-label">Card name</span><input id="ed-card-${i}-name" type="text" value="${escapeHtml(r.name)}" placeholder="Card name" autofocus></div>
-        <div class="ee-field"><span class="ee-label">Balance</span><input id="ed-card-${i}-balance" type="number" step="0.01" value="${r.balance}"></div>
-        <div class="ee-field"><span class="ee-label">Limit</span><input id="ed-card-${i}-limit" type="number" step="0.01" value="${r.limit}"></div>
-        <div class="entry-edit-actions">
-          <button class="btn-save" onclick="saveCardEdit(${i})">Save</button>
-          <button class="btn-cancel" onclick="cancelEdit('card',${i})">Cancel</button>
-        </div>
-      </div>`;
-    }
-    const util = r.limit>0 ? Math.min(100,(r.balance/r.limit)*100) : 0;
-    const cls = util>=70?'danger':(util>=30?'warn':'');
-    return `
-    <div class="entry-row">
-      <div class="e-main">
-        <div class="e-name">${escapeHtml(r.name||'Unnamed')}</div>
-        <div class="e-amount">${fmt(r.balance)} of ${fmt(r.limit)} limit · ${util.toFixed(0)}%</div>
-        <div class="util-bar"><div class="util-fill ${cls}" style="width:${util}%"></div></div>
-      </div>
-      <div class="entry-actions">
-        <button class="icon-btn" title="Edit" onclick="startEdit('card',${i})">✎</button>
-        <button class="icon-btn danger" title="Remove" onclick="confirmDelete('card',${i})">🗑</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function ring(pct, colorVar, size, stroke){
-  pct = Math.max(0, Math.min(100, pct));
-  const r = (size-stroke)/2, c = 2*Math.PI*r;
-  const off = c*(1-pct/100);
-  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="transform:rotate(-90deg)">
-    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--line)" stroke-width="${stroke}"/>
-    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${colorVar}" stroke-width="${stroke}"
-      stroke-dasharray="${c}" stroke-dashoffset="${off}" stroke-linecap="round"/>
-  </svg>`;
-}
-function donut(items, size, stroke){
-  const total = items.reduce((s,i)=>s+i.value,0);
-  const r = (size-stroke)/2, c = 2*Math.PI*r;
-  let acc = 0;
-  if(total<=0){
-    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-      <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--line)" stroke-width="${stroke}"/>
-    </svg>`;
-  }
-  const segs = items.map((it,i)=>{
-    const frac = it.value/total; const len = frac*c;
-    const seg = `<circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${PALETTE[i%PALETTE.length]}"
-      stroke-width="${stroke}" stroke-dasharray="${len} ${c-len}" stroke-dashoffset="${-acc}" stroke-linecap="butt"/>`;
-    acc += len; return seg;
-  }).join('');
-  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="transform:rotate(-90deg)">${segs}</svg>`;
-}
-function legendHtml(items, total){
-  if(items.length===0) return `<div class="empty" style="padding:0">No data yet.</div>`;
-  return items.map((it,i)=>`
-    <div class="li">
-      <span class="sw" style="background:${PALETTE[i%PALETTE.length]}"></span>
-      <span class="nm">${escapeHtml(it.name)}</span>
-      <span class="amt mono">${total>0?((it.value/total)*100).toFixed(0)+'%':''}</span>
-    </div>`).join('');
-}
-function gaugeColor(pct, invert){
-  if(invert){ if(pct>=70) return 'var(--red)'; if(pct>=30) return 'var(--amber)'; return 'var(--green)'; }
-  else { if(pct<0) return 'var(--red)'; if(pct<10) return 'var(--amber)'; return 'var(--green)'; }
-}
-
-function render(){
-  renderIncomeExpenseList('income','incomeBody');
-  renderIncomeExpenseList('expense','expenseBody');
-  renderTransferLikeList('transfer','transferBody','No cashflow or transfer entries yet.','e.g. UPI cashback');
-  renderTransferLikeList('internal','internalBody','No internal transfers yet.','e.g. Self-transfer to Kotak');
-  renderSimpleList('asset','assetBody');
-  renderSimpleList('investment','investmentBody');
-  renderSimpleList('liability','liabilityBody');
-  renderCardList();
-  renderBankList();
-
-  const incomeTotal = sum(data.income,'amount');
-  const expenseTotal = sum(data.expense,'amount');
-  const transferIn = data.transfer.filter(t=>t.direction!=='out').reduce((s,t)=>s+(Number(t.amount)||0),0);
-  const transferOut = data.transfer.filter(t=>t.direction==='out').reduce((s,t)=>s+(Number(t.amount)||0),0);
-  const transferNet = transferIn - transferOut;
-  const internalIn = data.internal.filter(t=>t.direction!=='out').reduce((s,t)=>s+(Number(t.amount)||0),0);
-  const internalOut = data.internal.filter(t=>t.direction==='out').reduce((s,t)=>s+(Number(t.amount)||0),0);
-  const internalNet = internalIn - internalOut;
-  const assetTotal = sum(data.asset,'amount');
-  const investmentTotal = sum(data.investment,'amount');
-  const bankTotal = sum(data.bank,'balance');
-  const combinedAssets = assetTotal + investmentTotal + bankTotal;
-  const liabilityTotal = sum(data.liability,'amount');
-  const cardBalanceTotal = sum(data.card,'balance');
-  const cardLimitTotal = sum(data.card,'limit');
-  const totalDebt = liabilityTotal + cardBalanceTotal;
-  const netWorth = combinedAssets - totalDebt;
-  const monthlyNet = incomeTotal - expenseTotal;
-  const savingsRate = incomeTotal>0 ? (monthlyNet/incomeTotal)*100 : 0;
-  const debtToAsset = combinedAssets>0 ? (totalDebt/combinedAssets)*100 : (totalDebt>0?100:0);
-  const overallUtil = cardLimitTotal>0 ? (cardBalanceTotal/cardLimitTotal)*100 : 0;
-
-  document.getElementById('transferTotal').textContent = (transferNet>=0?'+':'') + fmt(transferNet);
-  document.getElementById('transferTotal').style.color = transferNet>=0 ? 'var(--green)' : 'var(--red)';
-  document.getElementById('navTransfer').textContent = (transferNet>=0?'+':'') + fmt(transferNet);
-
-  document.getElementById('internalTotal').textContent = fmt(internalIn) + ' moved in · ' + fmt(internalOut) + ' moved out';
-  document.getElementById('navInternal').textContent = fmt(internalIn + internalOut);
-  updateInternalKeywordsHint();
-
-  document.getElementById('bankTotalEl').textContent = fmt(bankTotal);
-  document.getElementById('navBank').textContent = fmt(bankTotal);
-  const bankItems = data.bank.filter(a=>a.balance>0).map(a=>({name:a.name||'Unnamed', value:a.balance}));
-  document.getElementById('bankDonutWrap').innerHTML = `${donut(bankItems, 92, 16)}<div class="legend">${legendHtml(bankItems, bankTotal)}</div>`;
-  updateSmsAccountSelect();
-  updateAccountNamesHint();
-
-  document.getElementById('incomeTotal').textContent = fmt(incomeTotal)+'/mo';
-  document.getElementById('expenseTotal').textContent = fmt(expenseTotal)+'/mo';
-  document.getElementById('assetTotal').textContent = fmt(combinedAssets);
-  document.getElementById('assetTotalBreakdown').textContent = 'manual: '+fmt(assetTotal)+' · investments: '+fmt(investmentTotal)+' · bank: '+fmt(bankTotal);
-  document.getElementById('assetBankNote').textContent = bankTotal>0
-    ? ('Includes '+fmt(bankTotal)+' from your Bank Accounts, shown in the breakdown to the right. Tap here to manage those balances.')
-    : 'No bank accounts linked yet — tap here to add one, and its balance will show up here automatically.';
-  document.getElementById('liabilityTotal').textContent = fmt(liabilityTotal);
-  document.getElementById('cardTotal').textContent = fmt(cardBalanceTotal)+' / '+fmt(cardLimitTotal);
-
-  document.getElementById('navIncome').textContent = fmt(incomeTotal);
-  document.getElementById('navExpense').textContent = fmt(expenseTotal);
-  document.getElementById('navAsset').textContent = fmt(combinedAssets);
-  document.getElementById('navLiability').textContent = fmt(liabilityTotal);
-  document.getElementById('navCard').textContent = fmt(cardBalanceTotal);
-
-  document.getElementById('statusDot').style.background = netWorth>=0 ? 'var(--green)' : 'var(--red)';
-  document.getElementById('statusDot').style.boxShadow = netWorth>=0 ? '0 0 8px var(--green)' : '0 0 8px var(--red)';
-
-  document.getElementById('kpiRow').innerHTML = `
-    <div class="kpi hero ${netWorth>=0?'green':'red'}">
-      <div class="k-label">Net Worth</div><div class="k-value mono">${fmt(netWorth)}</div>
-      <div class="k-note">assets minus all debt</div>
-    </div>
-    <div class="kpi green">
-      <div class="k-label">Total Assets</div><div class="k-value mono">${fmt(combinedAssets)}</div>
-      <div class="k-note">${data.asset.length} holding${data.asset.length===1?'':'s'} + ${fmt(bankTotal)} in bank</div>
-    </div>
-    <div class="kpi red">
-      <div class="k-label">Total Debt</div><div class="k-value mono">${fmt(totalDebt)}</div>
-      <div class="k-note">liabilities + card balances</div>
-    </div>
-    <div class="kpi ${monthlyNet>=0?'blue':'red'}">
-      <div class="k-label">Monthly Net</div><div class="k-value mono">${fmt(monthlyNet)}</div>
-      <div class="k-note">income minus expenses</div>
-    </div>`;
-
-  const srColor = gaugeColor(savingsRate,false);
-  const daColor = gaugeColor(debtToAsset,true);
-  const utColor = gaugeColor(overallUtil,true);
-
-  const assetItems = data.asset.filter(a=>a.amount>0).map(a=>({name:a.name||'Unnamed', value:a.amount}));
-  const bankAsAssetItems = data.bank.filter(a=>a.balance>0).map(a=>({name:'🏦 '+(a.name||'Unnamed'), value:a.balance}));
-  const investmentItems = data.investment.filter(a=>a.amount>0).map(a=>({name:'📈 '+(a.name||'Unnamed'), value:a.amount}));
-  const combinedAssetItems = [...assetItems, ...investmentItems, ...bankAsAssetItems];
-  const expenseItems = data.expense.filter(e=>e.amount>0).map(e=>({name:e.name||'Unnamed', value:e.amount}));
-  const debtItemsRaw = [
-    ...data.liability.filter(l=>l.amount>0).map(l=>({name:l.name||'Unnamed', value:l.amount})),
-    ...data.card.filter(c=>c.balance>0).map(c=>({name:(c.name||'Card')+' bal.', value:c.balance}))
-  ];
-
-  document.getElementById('vizRow').innerHTML = `
-    <div class="viz-panel">
-      <div class="v-title">Savings Rate</div>
-      <div style="position:relative">${ring(Math.max(savingsRate,0), srColor, 110, 11)}
-        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
-          <div class="gauge-num mono" style="color:${srColor}">${savingsRate.toFixed(0)}%</div>
-        </div></div>
-      <div class="gauge-sub">of income kept</div>
-    </div>
-    <div class="viz-panel">
-      <div class="v-title">Debt / Asset</div>
-      <div style="position:relative">${ring(debtToAsset, daColor, 110, 11)}
-        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
-          <div class="gauge-num mono" style="color:${daColor}">${combinedAssets>0? debtToAsset.toFixed(0)+'%':'—'}</div>
-        </div></div>
-      <div class="gauge-sub">debt vs assets</div>
-    </div>
-    <div class="viz-panel">
-      <div class="v-title">Credit Utilization</div>
-      <div style="position:relative">${ring(overallUtil, utColor, 110, 11)}
-        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
-          <div class="gauge-num mono" style="color:${utColor}">${cardLimitTotal>0? overallUtil.toFixed(0)+'%':'—'}</div>
-        </div></div>
-      <div class="gauge-sub">balance vs limits</div>
-    </div>
-    <div class="viz-panel" style="align-items:stretch;">
-      <div class="v-title">Asset Allocation</div>
-      <div class="donut-wrap">${donut(combinedAssetItems, 92, 16)}<div class="legend">${legendHtml(combinedAssetItems, combinedAssets)}</div></div>
-    </div>
-    <div class="viz-panel" style="align-items:stretch;">
-      <div class="v-title">Debt Breakdown</div>
-      <div class="donut-wrap">${donut(debtItemsRaw, 92, 16)}<div class="legend">${legendHtml(debtItemsRaw, totalDebt)}</div></div>
-    </div>`;
-
-  // Per-page charts
-  document.getElementById('expenseDonutWrap').innerHTML = `${donut(expenseItems, 92, 16)}<div class="legend">${legendHtml(expenseItems, expenseTotal)}</div>`;
-  document.getElementById('assetDonutWrap').innerHTML = `${donut(combinedAssetItems, 92, 16)}<div class="legend">${legendHtml(combinedAssetItems, combinedAssets)}</div>`;
-  document.getElementById('cardGaugeWrap').innerHTML = `${ring(overallUtil, utColor, 110, 11)}
-    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
-      <div class="gauge-num mono" style="color:${utColor}">${cardLimitTotal>0? overallUtil.toFixed(0)+'%':'—'}</div>
-    </div>`;
-
-  // Verdict
-  const issues = [], goods = [];
-  if(savingsRate < 0){ issues.push('spending exceeds income this month'); }
-  else if(savingsRate < 10){ issues.push(`a thin savings rate (${savingsRate.toFixed(1)}%)`); }
-  else { goods.push(`a healthy savings rate (${savingsRate.toFixed(1)}%)`); }
-  if(overallUtil >= 70){ issues.push(`very high credit utilization (${overallUtil.toFixed(0)}%)`); }
-  else if(overallUtil >= 30){ issues.push(`credit utilization above the 30% guideline (${overallUtil.toFixed(0)}%)`); }
-  else if(cardLimitTotal>0){ goods.push(`credit utilization under control (${overallUtil.toFixed(0)}%)`); }
-  if(netWorth < 0){ issues.push('negative net worth — debt exceeds assets'); }
-  else { goods.push('positive net worth'); }
-  if(debtToAsset > 50 && combinedAssets>0){ issues.push(`an elevated debt-to-asset ratio (${debtToAsset.toFixed(0)}%)`); }
-
-  let vClass='good', vText='';
-  if(issues.length===0){ vText = `Finances look solid: ${goods.join(', ')}.`; }
-  else if(issues.length<=1 && netWorth>=0){ vClass='warn'; vText = `Mostly on track, but watch: ${issues.join('; ')}.`; }
-  else { vClass='bad'; vText = `Needs attention: ${issues.join('; ')}.`; }
-
-  const verdictHtml = `<div class="v-tag">Analysis</div><p>${vText}</p>`;
-  document.getElementById('verdictPanel').className = 'verdict-panel '+vClass;
-  document.getElementById('verdictPanel').innerHTML = verdictHtml;
-  document.getElementById('verdictPanel2').className = 'verdict-panel '+vClass;
-  document.getElementById('verdictPanel2').innerHTML = verdictHtml;
-
-  document.getElementById('analysisGrid').innerHTML = `
-    <div class="metric"><div class="m-label">Savings Rate</div><div class="m-value" style="color:${srColor}">${savingsRate.toFixed(1)}%</div><div class="m-note">of monthly income kept</div></div>
-    <div class="metric"><div class="m-label">Debt / Asset Ratio</div><div class="m-value" style="color:${daColor}">${combinedAssets>0? debtToAsset.toFixed(0)+'%' : (totalDebt>0?'—':'0%')}</div><div class="m-note">total debt vs assets + bank balances</div></div>
-    <div class="metric"><div class="m-label">Credit Utilization</div><div class="m-value" style="color:${utColor}">${cardLimitTotal>0? overallUtil.toFixed(0)+'%' : '—'}</div><div class="m-note">balance vs combined limits (keep &lt;30%)</div></div>
-    <div class="metric"><div class="m-label">Monthly Net</div><div class="m-value" style="color:${monthlyNet>=0?'var(--green)':'var(--red)'}">${fmt(monthlyNet)}</div><div class="m-note">income minus expenses</div></div>
-    <div class="metric"><div class="m-label">Net Worth</div><div class="m-value" style="color:${netWorth>=0?'var(--green)':'var(--red)'}">${fmt(netWorth)}</div><div class="m-note">assets minus all debt</div></div>
-    <div class="metric"><div class="m-label">Total Debt</div><div class="m-value" style="color:var(--red)">${fmt(totalDebt)}</div><div class="m-note">liabilities + card balances</div></div>`;
-}
-
-// Navigation
-const titles = {
-  overview:['Overview','Net worth and financial health at a glance'],
-  income:['Income','All monthly income sources'],
-  expense:['Expenses','All monthly spending categories'],
-  transfer:['Cashflow / Transfers','Money in and out that isn\'t income or an expense'],
-  internal:['Internal Transfers','Money moved between your own accounts'],
-  asset:['Assets','Everything you own'],
-  bank:['Bank Accounts','All your accounts in one place'],
-  liability:['Liabilities','Non-card debt obligations'],
-  card:['Credit Cards','Balances, limits and utilization'],
-  analysis:['Analysis','Full financial health breakdown'],
-  import:['Import Data','Bring in data by paste, CSV, or full backup'],
-  cloud:['Cloud Sync','Sync your data to your own Firestore project']
-};
-function goToPage(key){
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  const navItem = document.querySelector(`.nav-item[data-page="${key}"]`);
-  if(navItem) navItem.classList.add('active');
-  document.getElementById('page-'+key).classList.add('active');
-  document.getElementById('pageTitle').textContent = titles[key][0];
-  document.getElementById('pageSub').textContent = titles[key][1];
-  document.getElementById('sidebar').classList.remove('open');
-  document.querySelector('main').scrollTo(0,0);
-}
-document.querySelectorAll('.nav-item').forEach(item=>{
-  item.addEventListener('click', ()=> goToPage(item.dataset.page));
-});
-document.getElementById('menuBtn').addEventListener('click', ()=>{
-  document.getElementById('sidebar').classList.toggle('open');
-});
-
-function tickClock(){
-  const d = new Date();
-  document.getElementById('clock').textContent = d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'});
-}
-tickClock(); setInterval(tickClock, 60000);
-
-// ---- Demo data / reset ----
-async function loadDemoData(){
-  if(!confirm('Load fresh demo data into Demo mode? Your Real Data is untouched either way.')) return;
-  const demo = buildDemoDataset();
-  try{ await storageShim.set(DEMO_STORE_KEY, JSON.stringify(demo), false); }catch(e){}
-  if(currentMode !== 'demo'){
-    await switchMode('demo');
-  } else {
-    editing = { income:null, expense:null, transfer:null, internal:null, asset:null, investment:null, liability:null, card:null, bank:null };
-    data = demo;
-    render(); save();
-  }
-  const el = document.getElementById('demoStatus');
-  el.className = 'imp-status ok';
-  el.textContent = 'Demo data loaded and switched to Demo mode. Your Real Data is safe and untouched — switch back any time with the toggle top-left.';
-}
-function clearAllData(){
-  const label = currentMode === 'real' ? 'Real' : 'Demo';
-  if(!confirm(`Clear all ${label} Data? This only affects ${label} mode and can't be undone.`)) return;
-  editing = { income:null, expense:null, transfer:null, internal:null, asset:null, investment:null, liability:null, card:null, bank:null };
-  data = emptyDataset();
-  render(); save();
-  const el = document.getElementById('demoStatus');
-  el.className = 'imp-status ok';
-  el.textContent = `${label} Data cleared.`;
-}
-
-// ---- Import / Export ----
-function splitCSVLine(line){
-  // handles simple quoted commas
-  const out = []; let cur=''; let inQ=false;
-  for(let i=0;i<line.length;i++){
-    const ch = line[i];
-    if(ch==='"'){ inQ=!inQ; continue; }
-    if(ch===',' && !inQ){ out.push(cur); cur=''; continue; }
-    cur+=ch;
-  }
-  out.push(cur);
-  return out.map(s=>s.trim());
-}
-
-function looksLikeHeader(cells){
-  return cells.some(c => /^(name|source|category|asset|liability|card|amount|value|balance|limit|direction)$/i.test(c));
-}
-
-function parseRowsToCategory(lines, category){
-  const rows = [];
-  let start = 0;
-  const firstCells = lines.length ? splitCSVLine(lines[0]) : [];
-  if(looksLikeHeader(firstCells)) start = 1;
-
-  for(let i=start;i<lines.length;i++){
-    const line = lines[i].trim();
-    if(!line) continue;
-    const cells = splitCSVLine(line);
-    if(category==='card'){
-      const [name, balance, limit] = cells;
-      if(!name && !balance) continue;
-      rows.push({name:(name||'').trim(), balance: parseFloat(balance)||0, limit: parseFloat(limit)||0});
-    } else if(category==='transfer' || category==='internal'){
-      const [name, amount, direction] = cells;
-      if(!name && !amount) continue;
-      const dir = (direction||'in').trim().toLowerCase().startsWith('out') ? 'out' : 'in';
-      rows.push({name:(name||'').trim(), amount: parseFloat(amount)||0, direction: dir, account:''});
-    } else {
-      const [name, amount] = cells;
-      if(!name && !amount) continue;
-      rows.push({name:(name||'').trim(), amount: parseFloat(amount)||0});
-    }
-  }
-  return rows;
-}
-
-function applyImport(category, rows, append){
-  if(rows.length===0) return 0;
-  if(append){ data[category] = data[category].concat(rows); }
-  else { data[category] = rows; }
-  render(); save();
-  return rows.length;
-}
-
-function importPaste(){
-  const category = document.getElementById('pasteCategory').value;
-  const text = document.getElementById('pasteArea').value;
-  const append = document.getElementById('pasteAppend').checked;
-  const statusEl = document.getElementById('pasteStatus');
-  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
-  if(lines.length===0){
-    statusEl.className='imp-status err'; statusEl.textContent='Nothing to parse — paste some rows first.'; return;
-  }
-  const rows = parseRowsToCategory(lines, category);
-  const count = applyImport(category, rows, append);
-  if(count>0){
-    statusEl.className='imp-status ok'; statusEl.textContent=`Added ${count} row${count===1?'':'s'} to ${category}.`;
-    document.getElementById('pasteArea').value='';
-  } else {
-    statusEl.className='imp-status err'; statusEl.textContent='Could not parse any valid rows. Check the format.';
-  }
-}
-
-document.getElementById('pasteCategory').addEventListener('change', function(){
-  const hints = {
-    income:'Salary, 60000\nFreelance, 15000',
-    expense:'Rent, 20000\nGroceries, 8000',
-    transfer:'UPI cashback, 150, in\nSent to Ravi, 5000, out',
-    internal:'Self-transfer to Kotak, 10000, out\nSelf-transfer from SBI, 10000, in',
-    asset:'Savings account, 300000\nMutual funds, 150000',
-    liability:'Car loan, 250000\nPersonal loan, 80000',
-    card:'HDFC Regalia, 45000, 150000\nAmex, 12000, 200000'
-  };
-  document.getElementById('pasteFormatHint').textContent = hints[this.value];
-});
-
-document.getElementById('csvFile').addEventListener('change', function(e){
-  const file = e.target.files[0];
-  const statusEl = document.getElementById('csvStatus');
-  if(!file) return;
-  document.getElementById('csvDropLabel').textContent = file.name;
-  const reader = new FileReader();
-  reader.onload = function(ev){
-    const text = ev.target.result;
-    const category = document.getElementById('csvCategory').value;
-    const append = document.getElementById('csvAppend').checked;
-    const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
-    const rows = parseRowsToCategory(lines, category);
-    const count = applyImport(category, rows, append);
-    if(count>0){ statusEl.className='imp-status ok'; statusEl.textContent=`Imported ${count} row${count===1?'':'s'} into ${category}.`; }
-    else { statusEl.className='imp-status err'; statusEl.textContent='No valid rows found in that file.'; }
-  };
-  reader.onerror = function(){ statusEl.className='imp-status err'; statusEl.textContent='Could not read that file.'; };
-  reader.readAsText(file);
-});
-
-function exportBackup(){
-  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'ledger-backup-'+new Date().toISOString().slice(0,10)+'.json';
-  document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
-}
-
-document.getElementById('jsonFile').addEventListener('change', function(e){
-  const file = e.target.files[0];
-  const statusEl = document.getElementById('jsonStatus');
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = function(ev){
-    try{
-      const parsed = JSON.parse(ev.target.result);
-      const required = ['income','expense','asset','liability','card'];
-      const valid = required.every(k => Array.isArray(parsed[k]));
-      if(!valid){ throw new Error('missing expected fields'); }
-      data = parsed;
-      render(); save();
-      statusEl.className='imp-status ok'; statusEl.textContent='Backup restored successfully.';
-    }catch(err){
-      statusEl.className='imp-status err'; statusEl.textContent='That file doesn\'t look like a valid Ledger backup.';
-    }
-  };
-  reader.readAsText(file);
-});
-
-// ---- Cloud Sync (Firestore) ----
-const CLOUD_SETTINGS_KEY = 'ledger-cloud-settings';
-let cloudConnected = false;
-let cloudAutoSync = false;
-let pushDebounce = null;
-let cloudSuppressNextRemote = false;
-
-// ---- App Lock (Phone OTP) ----
-async function checkAndShowLock(){
-  let enabled = false, unlockedFlag = false;
-  try{ const e = await storageShim.get('ledger-security-enabled', false); enabled = !!(e && e.value === 'true'); }catch(err){}
-  try{ const u = await storageShim.get('ledger-security-unlocked', false); unlockedFlag = !!(u && u.value === 'true'); }catch(err){}
-  const toggle = document.getElementById('securityEnabledToggle');
-  if(toggle) toggle.checked = enabled;
-  const lockEl = document.getElementById('lockScreen');
-  if(!lockEl) return;
-  if(enabled && !unlockedFlag){ lockEl.classList.remove('hidden'); }
-  else { lockEl.classList.add('hidden'); }
-}
-async function toggleSecurityLock(on){
-  const status = document.getElementById('securityStatus');
-  if(on){
-    await storageShim.set('ledger-security-enabled', 'true', false);
-    status.className = 'imp-status ok';
-    status.textContent = 'OTP lock enabled — it takes effect next time the app opens. Reload now to test it before relying on it.';
-  } else {
-    await storageShim.set('ledger-security-enabled', 'false', false);
-    try{ await storageShim.delete('ledger-security-unlocked', false); }catch(e){}
-    status.className = 'imp-status ok';
-    status.textContent = 'OTP lock disabled.';
-  }
-}
-async function getAuthConfig(){
-  try{
-    const s = await storageShim.get(CLOUD_SETTINGS_KEY, false);
-    if(s && s.value){
-      const parsed = JSON.parse(s.value);
-      if(parsed.cfgText) return parseLenientConfig(parsed.cfgText);
-    }
-  }catch(e){}
-  if(window.DEFAULT_FIREBASE_CONFIG) return window.DEFAULT_FIREBASE_CONFIG;
-  return null;
-}
-async function sendLockOtp(){
-  const status = document.getElementById('lockStatus');
-  const phone = document.getElementById('lockPhone').value.trim();
-  if(!phone){ status.className='imp-status err'; status.textContent='Enter your mobile number, including country code (e.g. +91...).'; return; }
-  const cfgObj = await getAuthConfig();
-  if(!cfgObj){ status.className='imp-status err'; status.textContent='Set up your Firebase project on the Cloud Sync page first — OTP login uses that same project.'; return; }
-  try{
-    await window.__auth.init(cfgObj);
-    await window.__auth.sendOtp(phone);
-    document.getElementById('lockStep1').style.display = 'none';
-    document.getElementById('lockStep2').style.display = 'block';
-    status.className = 'imp-status ok';
-    status.textContent = 'Code sent — check your SMS.';
-  }catch(e){
-    status.className = 'imp-status err';
-    status.textContent = 'Could not send OTP: ' + (e.message || 'unknown error');
-  }
-}
-async function verifyLockOtp(){
-  const status = document.getElementById('lockStatus');
-  const code = document.getElementById('lockOtp').value.trim();
-  if(!code){ status.className='imp-status err'; status.textContent='Enter the code you received.'; return; }
-  try{
-    const ok = await window.__auth.verifyOtp(code);
-    if(ok){
-      const stay = document.getElementById('lockStayUnlocked').checked;
-      if(stay){ await storageShim.set('ledger-security-unlocked', 'true', false); }
-      document.getElementById('lockScreen').classList.add('hidden');
-      status.className = 'imp-status ok';
-      status.textContent = 'Unlocked.';
-    }
-  }catch(e){
-    status.className = 'imp-status err';
-    status.textContent = 'Invalid code: ' + (e.message || 'please try again');
-  }
-}
-function backToPhoneStep(){
-  document.getElementById('lockStep1').style.display = 'block';
-  document.getElementById('lockStep2').style.display = 'none';
-  document.getElementById('lockStatus').textContent = '';
-}
-
-// ---- Identity (phone number as automatic sync key) ----
-async function sendIdentityOtp(){
-  const status = document.getElementById('identityStatus');
-  const phone = document.getElementById('identityPhone').value.trim();
-  if(!phone){ status.className='imp-status err'; status.textContent='Enter your mobile number, including country code (e.g. +91...).'; return; }
-  const cfgText = document.getElementById('fbConfig').value.trim();
-  if(!cfgText){ status.className='imp-status err'; status.textContent='Paste your Firebase config below first.'; return; }
-  let cfgObj;
-  try{ cfgObj = parseLenientConfig(cfgText); }catch(e){ status.className='imp-status err'; status.textContent='Could not read your Firebase config.'; return; }
-  try{
-    await window.__auth.init(cfgObj);
-    await window.__auth.sendOtp(phone);
-    document.getElementById('identityStep1').style.display = 'none';
-    document.getElementById('identityStep2').style.display = 'block';
-    status.className = 'imp-status ok';
-    status.textContent = 'Code sent — check your SMS.';
-  }catch(e){
-    status.className = 'imp-status err';
-    status.textContent = 'Could not send OTP: ' + (e.message || 'unknown error');
-  }
-}
-async function verifyIdentityOtp(){
-  const status = document.getElementById('identityStatus');
-  const code = document.getElementById('identityOtp').value.trim();
-  if(!code){ status.className='imp-status err'; status.textContent='Enter the code you received.'; return; }
-  try{
-    const uid = await window.__auth.verifyOtp(code);
-    if(uid){
-      const phone = document.getElementById('identityPhone').value.trim();
-      await storageShim.set('ledger-identity-uid', uid, false);
-      await storageShim.set('ledger-identity-phone', phone, false);
-      document.getElementById('fbSyncKey').value = uid;
-      showIdentityVerified(uid, phone);
-      status.className = 'imp-status ok';
-      status.textContent = 'Verified.';
-      const cfgText = document.getElementById('fbConfig').value.trim();
-      if(cfgText){ await connectCloud(true); }
-    }
-  }catch(e){
-    status.className = 'imp-status err';
-    status.textContent = 'Invalid code: ' + (e.message || 'please try again');
-  }
-}
-function showIdentityVerified(uid, phone){
-  document.getElementById('identityUnverified').style.display = 'none';
-  document.getElementById('identityVerified').style.display = 'block';
-  document.getElementById('identitySignedInAs').textContent =
-    'Signed in' + (phone ? (' as ' + phone) : '') + ' · sync identity: ' + uid.slice(0, 8) + '…';
-}
-async function signOutIdentity(){
-  try{ await window.__auth.signOut(); }catch(e){}
-  try{ await storageShim.delete('ledger-identity-uid', false); }catch(e){}
-  try{ await storageShim.delete('ledger-identity-phone', false); }catch(e){}
-  document.getElementById('identityVerified').style.display = 'none';
-  document.getElementById('identityUnverified').style.display = 'block';
-  document.getElementById('identityStep1').style.display = 'block';
-  document.getElementById('identityStep2').style.display = 'none';
-  document.getElementById('identityPhone').value = '';
-  document.getElementById('identityOtp').value = '';
-  document.getElementById('identityStatus').textContent = '';
-}
-async function restoreIdentity(){
-  try{
-    const u = await storageShim.get('ledger-identity-uid', false);
-    if(u && u.value){
-      const p = await storageShim.get('ledger-identity-phone', false).catch(()=>null);
-      document.getElementById('fbSyncKey').value = u.value;
-      showIdentityVerified(u.value, p ? p.value : '');
-    }
-  }catch(e){}
-}
-function backToIdentityPhoneStep(){
-  document.getElementById('identityStep1').style.display = 'block';
-  document.getElementById('identityStep2').style.display = 'none';
-  document.getElementById('identityStatus').textContent = '';
-}
-
-async function lockNow(){
-  let enabled = false;
-  try{ const e = await storageShim.get('ledger-security-enabled', false); enabled = !!(e && e.value === 'true'); }catch(err){}
-  if(!enabled){ alert('OTP lock isn\'t enabled — turn it on in Cloud Sync → App Lock first.'); return; }
-  try{ await storageShim.delete('ledger-security-unlocked', false); }catch(e){}
-  document.getElementById('lockStep1').style.display = 'block';
-  document.getElementById('lockStep2').style.display = 'none';
-  document.getElementById('lockPhone').value = '';
-  document.getElementById('lockOtp').value = '';
-  document.getElementById('lockStatus').textContent = '';
-  document.getElementById('lockScreen').classList.remove('hidden');
-}
-
-function parseLenientConfig(text){
-  let t = (text||'').trim();
-  t = t.replace(/^\s*(export\s+)?(const|let|var)\s+\w+\s*=\s*/,'').replace(/;\s*$/,'');
-  t = t.trim();
-  if(!t.startsWith('{')) t = '{' + t;
-  if(!t.endsWith('}')) t = t + '}';
-  try{ return JSON.parse(t); }catch(e){}
-  return Function('"use strict"; return (' + t + ')')();
-}
-
-function setCloudStatus(text, sub, connected){
-  document.getElementById('cloudStatusText').textContent = text;
-  if(sub!==undefined) document.getElementById('cloudStatusSub').textContent = sub;
-  document.getElementById('cloudStatusBar').classList.toggle('connected', !!connected);
-  document.getElementById('navCloud').style.color = connected ? 'var(--green)' : '';
-}
-function flashConnectStatus(msg, ok){
-  const el = document.getElementById('cloudConnectStatus');
-  el.className = 'imp-status ' + (ok===false?'err':'ok');
-  el.textContent = msg;
-}
-
-async function connectCloud(silent){
-  const cfgText = document.getElementById('fbConfig').value.trim();
-  const syncKey = document.getElementById('fbSyncKey').value.trim();
-  if(!cfgText || !syncKey){
-    if(!silent) flashConnectStatus('Paste a config and choose a sync key first.', false);
-    return;
-  }
-  let cfgObj;
-  try{ cfgObj = parseLenientConfig(cfgText); }
-  catch(e){ flashConnectStatus('Could not parse that config — check it was copied fully.', false); return; }
-
-  try{
-    await window.__fb.connect(cfgObj, syncKey);
-    cloudConnected = true;
-    setCloudStatus('Connected', 'Project: '+(cfgObj.projectId||'—')+' · Key: '+syncKey, true);
-    if(!silent) flashConnectStatus('Connected. You can Push, Pull, or enable Live sync.', true);
-    updateShortcutTemplates(cfgObj.projectId||'YOUR_PROJECT_ID', syncKey);
-    await storageShim.set(CLOUD_SETTINGS_KEY, JSON.stringify({cfgText, syncKey, autoSync: cloudAutoSync, inboxCapture: inboxAutoCapture}), false);
-  }catch(e){
-    cloudConnected = false;
-    setCloudStatus('Connection failed', e.message || 'Check your config', false);
-    if(!silent) flashConnectStatus('Connection failed: ' + (e.message||'unknown error'), false);
-  }
-}
-
-async function restoreCloudSettings(){
-  try{
-    const res = await storageShim.get(CLOUD_SETTINGS_KEY, false);
-    if(res && res.value){
-      const s = JSON.parse(res.value);
-      document.getElementById('fbConfig').value = s.cfgText || '';
-      document.getElementById('fbSyncKey').value = s.syncKey || '';
-      if(s.cfgText && s.syncKey){
-        await connectCloud(true);
-        if(s.autoSync){ document.getElementById('autoSyncToggle').checked = true; toggleAutoSync(true); }
-        if(s.inboxCapture){ document.getElementById('inboxCaptureToggle').checked = true; toggleInboxCapture(true); }
-      }
-    }
-  }catch(e){ /* no saved cloud settings */ }
-}
-
-async function forgetCloud(){
-  toggleAutoSync(false);
-  toggleInboxCapture(false);
-  document.getElementById('inboxCaptureToggle').checked = false;
-  cloudConnected = false;
-  document.getElementById('fbConfig').value = '';
-  document.getElementById('fbSyncKey').value = '';
-  document.getElementById('shortcutUrl').value = '';
-  document.getElementById('shortcutBody').value = '';
-  setCloudStatus('Not connected', 'Connect a Firestore project to sync across devices', false);
-  flashConnectStatus('Disconnected and forgotten on this device.', true);
-  try{ await storageShim.delete(CLOUD_SETTINGS_KEY, false); }catch(e){}
-}
-
-function collectSyncSettings(){
-  return {
-    salaryKeywords: document.getElementById('salaryKeywords').value,
-    internalKeywords: document.getElementById('internalKeywords').value,
-    smsAccountId: document.getElementById('smsAccountSelect').value
-  };
-}
-async function applySyncSettings(settingsStr){
-  if(!settingsStr) return;
-  let s;
-  try{ s = JSON.parse(settingsStr); }catch(e){ return; }
-  if(s.salaryKeywords !== undefined){
-    document.getElementById('salaryKeywords').value = s.salaryKeywords;
-    storageShim.set('ledger-salary-keywords', s.salaryKeywords, false).catch(()=>{});
-  }
-  if(s.internalKeywords !== undefined){
-    document.getElementById('internalKeywords').value = s.internalKeywords;
-    storageShim.set('ledger-internal-keywords', s.internalKeywords, false).catch(()=>{});
-  }
-  if(s.smsAccountId !== undefined){
-    pendingSmsAccountId = s.smsAccountId;
-    storageShim.set('ledger-sms-account', s.smsAccountId, false).catch(()=>{});
-    updateSmsAccountSelect();
-  }
-}
-async function pushToCloud(manual){
-  if(currentMode !== 'real'){ if(manual) flashConnectStatus('Switch to Real Data mode to sync with the cloud.', false); return; }
-  if(!cloudConnected){ if(manual) flashConnectStatus('Connect first.', false); return; }
-  try{
-    await window.__fb.push(data, collectSyncSettings());
-    setCloudStatus('Connected', 'Last synced ' + new Date().toLocaleTimeString(), true);
-    if(manual) flashConnectStatus('Pushed current data and settings to the cloud.', true);
-  }catch(e){
-    if(manual) flashConnectStatus('Push failed: ' + (e.message||'unknown error'), false);
-  }
-}
-async function pullFromCloud(){
-  if(currentMode !== 'real'){ flashConnectStatus('Switch to Real Data mode to sync with the cloud.', false); return; }
-  if(!cloudConnected){ flashConnectStatus('Connect first.', false); return; }
-  try{
-    const remote = await window.__fb.pull();
-    if(remote && remote.payload){
-      cloudSuppressNextRemote = true;
-      data = JSON.parse(remote.payload);
-      render(); await storageShim.set(STORE_KEY, JSON.stringify(data), false);
-      await applySyncSettings(remote.settings);
-      setCloudStatus('Connected', 'Pulled at ' + new Date().toLocaleTimeString(), true);
-      flashConnectStatus('Pulled latest data and settings from the cloud.', true);
-    } else {
-      flashConnectStatus('No data in the cloud yet for this sync key — try Push first.', false);
-    }
-  }catch(e){ flashConnectStatus('Pull failed: ' + (e.message||'unknown error'), false); }
-}
-function scheduleCloudPush(){
-  if(!cloudConnected || currentMode !== 'real') return;
-  clearTimeout(pushDebounce);
-  pushDebounce = setTimeout(()=> pushToCloud(false), 1200);
-}
-let pendingSmsAccountId = '';
-function updateSmsAccountSelect(){
-  const sel = document.getElementById('smsAccountSelect');
-  if(!sel) return;
-  const current = sel.value || pendingSmsAccountId;
-  sel.innerHTML = `<option value="">— none (don't affect any account) —</option>` +
-    data.bank.map(a=>`<option value="${a.id}">${escapeHtml(a.name||'Unnamed')}</option>`).join('');
-  if(current && data.bank.some(a=>a.id===current)) sel.value = current;
-}
-document.getElementById('smsAccountSelect').addEventListener('change', function(){
-  storageShim.set('ledger-sms-account', this.value, false).catch(()=>{});
-  scheduleCloudPush();
-});
-document.getElementById('salaryKeywords').addEventListener('change', function(){
-  storageShim.set('ledger-salary-keywords', this.value, false).catch(()=>{});
-  scheduleCloudPush();
-});
-document.getElementById('internalKeywords').addEventListener('change', function(){
-  storageShim.set('ledger-internal-keywords', this.value, false).catch(()=>{});
-  scheduleCloudPush();
-});
-
-function toggleAutoSync(on){
-  if(on && currentMode !== 'real'){
-    document.getElementById('autoSyncToggle').checked = false;
-    flashConnectStatus('Switch to Real Data mode first.', false);
-    return;
-  }
-  cloudAutoSync = on;
-  document.getElementById('autoSyncToggle').checked = on;
-  if(on && cloudConnected){
-    window.__fb.listen((remoteDoc)=>{
-      if(cloudSuppressNextRemote){ cloudSuppressNextRemote = false; return; }
-      if(!remoteDoc || !remoteDoc.payload) return;
-      if(currentMode !== 'real') return;
-      data = JSON.parse(remoteDoc.payload);
-      render();
-      storageShim.set(STORE_KEY, JSON.stringify(data), false).catch(()=>{});
-      applySyncSettings(remoteDoc.settings);
-      setCloudStatus('Connected', 'Live update received ' + new Date().toLocaleTimeString(), true);
-    });
-  } else {
-    window.__fb.stopListen();
-  }
-}
-
-// ---- SMS inbox auto-capture ----
-let inboxAutoCapture = false;
-const inboxProcessing = new Set();
-let inboxLog = [];
-
-function toggleInboxCapture(on){
-  if(on && currentMode !== 'real'){
-    document.getElementById('inboxCaptureToggle').checked = false;
-    flashConnectStatus('Switch to Real Data mode first.', false);
-    return;
-  }
-  inboxAutoCapture = on;
-  if(on && cloudConnected){
-    window.__fb.listenInbox(handleInboxDocs);
-  } else {
-    window.__fb.stopInbox();
-  }
-}
-
-function updateShortcutTemplates(projectId, syncKey){
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/ledgerApp/${syncKey}/inbox`;
-  document.getElementById('shortcutUrl').value = url;
-  document.getElementById('shortcutBody').value = JSON.stringify({
-    fields: {
-      raw: { stringValue: "<< full SMS text variable >>" },
-      amount: { doubleValue: 0 },
-      type: { stringValue: "debit  // or \"credit\" or \"transfer\" — see step 5" },
-      account: { stringValue: "<< exact account name, e.g. SBI Savings a/c >>" },
-      createdAt: { integerValue: String(Date.now()) }
-    }
-  }, null, 2);
-}
-function updateAccountNamesHint(){
-  const el = document.getElementById('accountNamesHint');
-  if(!el) return;
-  if(data.bank.length === 0){ el.textContent = 'Add a bank account first (Bank Accounts page) to see its name here.'; return; }
-  el.textContent = data.bank.map(a => a.name || 'Unnamed').join('\n');
-}
-function updateInternalKeywordsHint(){
-  const el = document.getElementById('internalKeywordsHint');
-  if(!el) return;
-  if(data.bank.length === 0){ el.textContent = 'Add your bank accounts first to see suggested keywords here.'; return; }
-  const suggested = [...new Set(data.bank.map(a => (a.name||'').trim().split(/\s+/)[0]).filter(Boolean))];
-  el.textContent = 'Suggested, based on your account names: ' + suggested.join(', ');
-}
-
-function guessLabel(raw){
-  const m = (raw||'').match(/(?:at|to|from)\s+([A-Za-z0-9 &._-]{3,30})/i);
-  return m ? m[1].trim() : null;
-}
-function getSalaryKeywords(){
-  const raw = (document.getElementById('salaryKeywords').value || 'salary, vividminds').trim();
-  return raw.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
-}
-function getInternalKeywords(){
-  const raw = (document.getElementById('internalKeywords').value || '').trim();
-  return raw.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
-}
-
-async function handleInboxDocs(docs){
-  if(currentMode !== 'real') return;
-  for(const {id, data: d} of docs){
-    if(inboxProcessing.has(id)) continue;
-    inboxProcessing.add(id);
-    try{
-      const amount = Number(d.amount) || 0;
-      const type = (d.type || '').toLowerCase();
-      const raw = d.raw || '';
-      const sentAccountName = (d.account || '').trim();
-      let acct = null, matchNote = '';
-      if(sentAccountName){
-        acct = data.bank.find(a => (a.name||'').trim().toLowerCase() === sentAccountName.toLowerCase());
-        matchNote = acct ? (' → ' + acct.name) : (' → no account named "'+sentAccountName+'", left unlinked');
-      }
-      if(!acct){
-        const fallbackId = document.getElementById('smsAccountSelect').value;
-        if(fallbackId){ acct = findAccount(fallbackId); if(acct && !matchNote) matchNote = ' → ' + acct.name + ' (fallback)'; }
-      }
-
-      if(amount > 0){
-        // Internal transfer detection takes priority over credit/debit/transfer wording:
-        // does the SMS mention one of the user's OTHER own banks (excluding the bank this message is already from)?
-        const internalKeywords = getInternalKeywords();
-        const rawLower = raw.toLowerCase();
-        const isInternal = internalKeywords.some(kw => {
-          if(!kw) return false;
-          if(acct && (acct.name||'').toLowerCase().includes(kw)) return false; // skip self-match on own bank
-          return rawLower.includes(kw);
-        });
-
-        const keywords = getSalaryKeywords();
-        const isSalary = keywords.some(kw => kw && rawLower.includes(kw));
-
-        let bucket;
-        if(isInternal){ bucket = 'internal'; }
-        else if(type === 'transfer'){ bucket = 'transfer'; }
-        else if(type === 'credit'){ bucket = isSalary ? 'income' : 'transfer'; }
-        else { bucket = 'expense'; }
-
-        if(bucket === 'income'){
-          const label = guessLabel(raw) || 'Salary';
-          const row = { name: label, amount, account: acct ? acct.id : '' };
-          if(acct){ acct.balance += amount; row._appliedAmt = amount; }
-          data.income.push(row);
-          logInboxActivity(`Added income — ${label}: ${fmt(amount)}${matchNote}`, 'ok');
-        } else if(bucket === 'expense'){
-          const label = guessLabel(raw) || 'Bank debit';
-          const row = { name: label, amount, account: acct ? acct.id : '' };
-          if(acct){ acct.balance -= amount; row._appliedAmt = amount; }
-          data.expense.push(row);
-          logInboxActivity(`Added expense — ${label}: ${fmt(amount)}${matchNote}`, 'ok');
-        } else if(bucket === 'internal'){
-          const direction = (type === 'debit' || /debited/i.test(raw)) ? 'out' : 'in';
-          const label = guessLabel(raw) || (direction === 'out' ? 'Internal transfer sent' : 'Internal transfer received');
-          const row = { name: label, amount, direction, account: acct ? acct.id : '' };
-          if(acct){ acct.balance += (direction==='out' ? -amount : amount); row._appliedAmt = amount; }
-          data.internal.push(row);
-          logInboxActivity(`Added internal transfer — ${label}: ${direction==='out'?'−':'+'}${fmt(amount)}${matchNote}`, 'ok');
-        } else {
-          const direction = (type === 'debit' || /debited/i.test(raw)) ? 'out' : 'in';
-          const label = guessLabel(raw) || (direction === 'out' ? 'Transfer sent' : (type==='credit' ? 'Cashback / credit' : 'Transfer received'));
-          const row = { name: label, amount, direction, account: acct ? acct.id : '' };
-          if(acct){ acct.balance += (direction==='out' ? -amount : amount); row._appliedAmt = amount; }
-          data.transfer.push(row);
-          logInboxActivity(`Added cashflow/transfer — ${label}: ${direction==='out'?'−':'+'}${fmt(amount)}${matchNote}`, 'ok');
-        }
-
-        render();
-        await storageShim.set(STORE_KEY, JSON.stringify(data), false);
-        scheduleCloudPush();
-      } else {
-        logInboxActivity(`Skipped unparsable SMS: "${raw.slice(0,50)}${raw.length>50?'…':''}"`, 'err');
-      }
-      await window.__fb.deleteInboxDoc(id);
-    }catch(e){
-      logInboxActivity('Error processing an incoming SMS entry: ' + (e.message||'unknown'), 'err');
-    }
-    inboxProcessing.delete(id);
-  }
-}
-
-function logInboxActivity(msg, status){
-  inboxLog.unshift({ msg, status, time: new Date().toLocaleTimeString() });
-  inboxLog = inboxLog.slice(0, 12);
-  renderInboxLog();
-}
-function renderInboxLog(){
-  const el = document.getElementById('inboxLogList');
-  if(!el) return;
-  if(inboxLog.length === 0){ el.innerHTML = '<div class="empty">No auto-captured transactions yet.</div>'; return; }
-  el.innerHTML = inboxLog.map(l => `
-    <div class="li" style="color:${l.status==='ok'?'var(--green)':'var(--red)'}; padding:4px 0;">
-      <span class="mono" style="color:var(--dim); margin-right:8px;">${l.time}</span>${escapeHtml(l.msg)}
-    </div>`).join('');
-}
-
-let __loaded = false;
-function __loadOnce(){ if(__loaded) return; __loaded = true; load(); }
-if(window.__fb){ __loadOnce(); } else { window.addEventListener('fb-ready', __loadOnce, {once:true}); }
-setTimeout(__loadOnce, 2500); // fallback if the Firebase module can't load (e.g. offline)
-</script>
 <script type="module">
-  import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getAuth, GoogleAuthProvider, signInWithPopup,
+    createUserWithEmailAndPassword, signInWithEmailAndPassword,
+    onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import {
+    getFirestore, collection, onSnapshot, query, orderBy, limit, doc, setDoc
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  let sharedApp = null, sharedAppConfigKey = null;
-  let fbDb = null, fbDocRef = null, unsub = null, inboxUnsub = null, currentSyncKey = null;
-  let authInstance = null, recaptchaVerifier = null, confirmationResult = null;
-
-  // Auth and Firestore share ONE Firebase app instance, so Firestore requests
-  // carry the signed-in user's ID token — required for uid-based security rules.
-  async function getOrInitApp(configObj){
-    const key = JSON.stringify(configObj);
-    if(sharedApp && sharedAppConfigKey === key) return sharedApp;
-    if(sharedApp){
-      try{ if(unsub) unsub(); if(inboxUnsub) inboxUnsub(); await deleteApp(sharedApp); }catch(e){}
-      sharedApp = null;
-    }
-    sharedApp = initializeApp(configObj, 'ledger-shared');
-    sharedAppConfigKey = key;
-    return sharedApp;
+  function randomKey(len = 32) {
+    const bytes = new Uint8Array(len);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
   }
 
-  window.__fb = {
-    async connect(configObj, syncKey){
-      const app = await getOrInitApp(configObj);
-      fbDb = getFirestore(app);
-      fbDocRef = doc(fbDb, 'ledgerApp', syncKey);
-      currentSyncKey = syncKey;
-      // touch the doc to confirm config/permissions work
-      await getDoc(fbDocRef);
-      return true;
-    },
-    async push(dataObj, settingsObj){
-      if(!fbDocRef) throw new Error('not connected');
-      await setDoc(fbDocRef, {
-        payload: JSON.stringify(dataObj),
-        settings: JSON.stringify(settingsObj || {}),
-        updatedAt: Date.now()
-      });
-    },
-    async pull(){
-      if(!fbDocRef) throw new Error('not connected');
-      const snap = await getDoc(fbDocRef);
-      return snap.exists() ? snap.data() : null;
-    },
-    listen(onChange){
-      if(!fbDocRef) return;
-      if(unsub) unsub();
-      unsub = onSnapshot(fbDocRef, (snap)=>{
-        if(snap.exists()) onChange(snap.data());
-      }, (err)=> console.error('listen error', err));
-    },
-    stopListen(){ if(unsub){ unsub(); unsub = null; } },
-    listenInbox(onDocs){
-      if(!fbDb || !currentSyncKey) return;
-      const colRef = collection(fbDb, 'ledgerApp', currentSyncKey, 'inbox');
-      if(inboxUnsub) inboxUnsub();
-      inboxUnsub = onSnapshot(colRef, (snap)=>{
-        const docs = [];
-        snap.forEach(d=> docs.push({ id: d.id, data: d.data() }));
-        onDocs(docs);
-      }, (err)=> console.error('inbox listen error', err));
-    },
-    stopInbox(){ if(inboxUnsub){ inboxUnsub(); inboxUnsub = null; } },
-    async deleteInboxDoc(id){
-      if(!fbDb || !currentSyncKey) return;
-      await deleteDoc(doc(fbDb, 'ledgerApp', currentSyncKey, 'inbox', id));
-    }
-  };
+  import { firebaseConfig } from './firebase-config.js';
 
-  window.__auth = {
-    async init(configObj){
-      const app = await getOrInitApp(configObj);
-      authInstance = getAuth(app);
-      return true;
-    },
-    async sendOtp(phoneNumber){
-      if(!authInstance) throw new Error('Not initialized — set up Cloud Sync first.');
-      if(!recaptchaVerifier){
-        recaptchaVerifier = new RecaptchaVerifier(authInstance, 'recaptcha-container', { size: 'invisible' });
-      }
-      confirmationResult = await signInWithPhoneNumber(authInstance, phoneNumber, recaptchaVerifier);
-      return true;
-    },
-    async verifyOtp(code){
-      if(!confirmationResult) throw new Error('Request an OTP first.');
-      const result = await confirmationResult.confirm(code);
-      return (result && result.user) ? result.user.uid : null;
-    },
-    currentUid(){
-      return (authInstance && authInstance.currentUser) ? authInstance.currentUser.uid : null;
-    },
-    async signOut(){
-      if(authInstance) await signOut(authInstance);
-    }
-  };
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-  window.dispatchEvent(new Event('fb-ready'));
+  let confirmationResult = null;
+  const statusBadge = document.getElementById('statusBadge');
+
+  async function onAuthSuccess(user) {
+    await setDoc(doc(db, 'users', user.uid), {
+      email: user.email || '',
+      createdAt: Date.now()
+    }, { merge: true });
+    document.getElementById('signinCard').style.display = 'none';
+    document.getElementById('apiKeyCard').style.display = 'block';
+    document.getElementById('appContent').style.display = 'block';
+    statusBadge.textContent = 'synced · ' + (user.email || user.uid);
+    statusBadge.className = 'status live';
+    listenToTransactions(user.uid);
+
+    document.getElementById('genKeyBtn').addEventListener('click', async () => {
+      const key = randomKey();
+      await setDoc(doc(db, 'apiKeys', key), { uid: user.uid, createdAt: Date.now() });
+      document.getElementById('apiKeyOutput').value = key;
+    });
+    document.getElementById('copyKeyBtn').addEventListener('click', () => {
+      const el = document.getElementById('apiKeyOutput');
+      el.select();
+      navigator.clipboard.writeText(el.value);
+    });
+  }
+
+  document.getElementById('googleBtn').addEventListener('click', async () => {
+    try {
+      const result = await signInWithPopup(auth, new GoogleAuthProvider());
+      onAuthSuccess(result.user);
+    } catch (e) {
+      alert('Google sign-in failed: ' + e.message);
+    }
+  });
+
+  document.getElementById('signInBtn').addEventListener('click', async () => {
+    const email = document.getElementById('emailInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      onAuthSuccess(result.user);
+    } catch (e) {
+      alert('Sign-in failed: ' + e.message);
+    }
+  });
+
+  document.getElementById('signUpBtn').addEventListener('click', async () => {
+    const email = document.getElementById('emailInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      onAuthSuccess(result.user);
+    } catch (e) {
+      alert('Account creation failed: ' + e.message);
+    }
+  });
+
+  function inr(n) {
+    return '₹' + Math.round(n).toLocaleString('en-IN');
+  }
+
+  function listenToTransactions(uid) {
+    const q = query(collection(db, 'users', uid, 'transactions'), orderBy('timestamp', 'desc'), limit(200));
+    onSnapshot(q, (snap) => {
+      const txns = [];
+      snap.forEach(d => txns.push({ id: d.id, ...d.data() }));
+      render(txns);
+    });
+  }
+
+  function render(txns) {
+    const listEl = document.getElementById('txnList');
+    document.getElementById('txnCount').textContent = txns.length + ' entries';
+
+    if (txns.length === 0) {
+      listEl.innerHTML = `<div class="empty"><div class="big">No entries yet</div>Waiting for the first synced SMS.</div>`;
+    } else {
+      listEl.innerHTML = txns.map(t => {
+        const isCredit = t.type === 'credit';
+        const stampClass = t.category === 'Income' ? 'income' : (t.category === 'Other Credit/Transfer' ? 'transfer' : 'expense');
+        const stampLabel = t.category === 'Income' ? 'Income' : (t.category === 'Other Credit/Transfer' ? 'Transfer' : 'Expense');
+        const date = t.timestamp ? new Date(t.timestamp).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—';
+        return `
+          <div class="txn">
+            <div class="date">${date}</div>
+            <div class="desc">${t.counterparty || t.accountId || 'Unlabeled'}<span class="acct">${t.accountId || ''}</span></div>
+            <div class="stamp ${stampClass}">${stampLabel}</div>
+            <div class="amt ${isCredit ? 'credit' : 'debit'}">${isCredit ? '+' : '−'}${inr(t.amount)}</div>
+          </div>`;
+      }).join('');
+    }
+
+    const income = txns.filter(t => t.category === 'Income').reduce((s, t) => s + t.amount, 0);
+    const transfer = txns.filter(t => t.category === 'Other Credit/Transfer').reduce((s, t) => s + t.amount, 0);
+    const expense = txns.filter(t => t.type === 'debit').reduce((s, t) => s + t.amount, 0);
+    const max = Math.max(income, transfer, expense, 1);
+
+    document.getElementById('incomeTotal').textContent = inr(income);
+    document.getElementById('transferTotal').textContent = inr(transfer);
+    document.getElementById('expenseTotal').textContent = inr(expense);
+    document.getElementById('incomeBar').style.width = (income / max * 100) + '%';
+    document.getElementById('transferBar').style.width = (transfer / max * 100) + '%';
+    document.getElementById('expenseBar').style.width = (expense / max * 100) + '%';
+  }
 </script>
 </body>
 </html>
