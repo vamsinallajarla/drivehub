@@ -188,6 +188,27 @@
     </div>
   </div>
 
+  <div class="ledger" id="manualEntryCard" style="margin-bottom:20px;">
+    <div class="ledger-head">
+      <h3>Add transaction</h3>
+    </div>
+    <div style="padding:16px 20px;">
+      <div class="row">
+        <input id="manAmount" type="number" step="0.01" placeholder="Amount" />
+        <select id="manType" style="font-family:'IBM Plex Mono',monospace;padding:10px 12px;border:1px solid var(--rule);border-radius:4px;background:#fff;font-size:14px;">
+          <option value="credit">Credit (money in)</option>
+          <option value="debit">Debit (money out)</option>
+        </select>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <input id="manDesc" type="text" placeholder="Description (e.g. Salary from Acme Corp, Amazon purchase)" />
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button id="manAddBtn">Add transaction</button>
+      </div>
+    </div>
+  </div>
+
   <div class="ledger">
     <div class="ledger-head">
       <h3>Transactions</h3>
@@ -199,6 +220,46 @@
         Sign in above — transactions from your Shortcut will appear here in real time.
       </div>
     </div>
+  </div>
+
+  <div class="summary" style="margin-top:20px;">
+    <div class="sum-card income">
+      <div class="label">Assets (Bank + Investments)</div>
+      <div class="amt" id="assetsTotal">₹0</div>
+    </div>
+    <div class="sum-card expense">
+      <div class="label">Liabilities (Cards + Loans)</div>
+      <div class="amt" id="liabilitiesTotal">₹0</div>
+    </div>
+    <div class="sum-card transfer">
+      <div class="label">Net Worth</div>
+      <div class="amt" id="netWorthTotal">₹0</div>
+    </div>
+  </div>
+
+  <div class="ledger" id="assetEntryCard" style="margin-top:20px;margin-bottom:20px;">
+    <div class="ledger-head">
+      <h3>Add / update account or asset</h3>
+    </div>
+    <div style="padding:16px 20px;">
+      <div class="row">
+        <select id="assetType" style="font-family:'IBM Plex Mono',monospace;padding:10px 12px;border:1px solid var(--rule);border-radius:4px;background:#fff;font-size:14px;">
+          <option value="bank">Bank Account</option>
+          <option value="investment">Investment</option>
+          <option value="credit_card">Credit Card</option>
+          <option value="loan">Loan</option>
+        </select>
+        <input id="assetName" type="text" placeholder="Name (e.g. HDFC Savings, Zerodha, ICICI Card, Home Loan)" />
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <input id="assetIdentifier" type="text" placeholder="Linked mobile number (bank) or PAN (investment/card/loan)" />
+        <input id="assetValue" type="number" step="0.01" placeholder="Balance / current value / outstanding" />
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button id="assetAddBtn">Save</button>
+      </div>
+    </div>
+    <div id="assetList"></div>
   </div>
 
   <div class="footnote">Bank-only sync via SMS. Salary credits are the only entries counted as Income; every other credit is Other Credit/Transfer.</div>
@@ -236,6 +297,7 @@
   const statusBadge = document.getElementById('statusBadge');
 
   async function onAuthSuccess(user) {
+    currentUid = user.uid;
     await setDoc(doc(db, 'users', user.uid), {
       email: user.email || '',
       createdAt: Date.now()
@@ -246,6 +308,7 @@
     statusBadge.textContent = 'synced · ' + (user.email || user.uid);
     statusBadge.className = 'status live';
     listenToTransactions(user.uid);
+    listenToAssets(user.uid);
 
     document.getElementById('genKeyBtn').addEventListener('click', async () => {
       const key = randomKey();
@@ -293,6 +356,86 @@
   function inr(n) {
     return '₹' + Math.round(n).toLocaleString('en-IN');
   }
+
+  const SALARY_KEYWORDS = ['SALARY', 'SAL CREDIT', 'SAL-', 'PAYROLL', 'WAGES', 'STIPEND'];
+  function categorize(type, text) {
+    if (type !== 'credit') return 'Expense';
+    const upper = (text || '').toUpperCase();
+    return SALARY_KEYWORDS.some((k) => upper.includes(k)) ? 'Income' : 'Other Credit/Transfer';
+  }
+
+  let currentUid = null;
+
+  document.getElementById('assetAddBtn').addEventListener('click', async () => {
+    if (!currentUid) { alert('Not signed in'); return; }
+    const type = document.getElementById('assetType').value;
+    const name = document.getElementById('assetName').value.trim();
+    const identifier = document.getElementById('assetIdentifier').value.trim();
+    const value = parseFloat(document.getElementById('assetValue').value);
+    if (!name || isNaN(value)) { alert('Enter a name and a numeric value'); return; }
+
+    const assetId = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 60) || `asset_${Date.now()}`;
+    await setDoc(doc(db, 'users', currentUid, 'assets', assetId), {
+      type, name, identifier, value, updatedAt: Date.now()
+    });
+
+    document.getElementById('assetName').value = '';
+    document.getElementById('assetIdentifier').value = '';
+    document.getElementById('assetValue').value = '';
+  });
+
+  function listenToAssets(uid) {
+    onSnapshot(collection(db, 'users', uid, 'assets'), (snap) => {
+      const assets = [];
+      snap.forEach(d => assets.push({ id: d.id, ...d.data() }));
+      renderAssets(assets);
+    });
+  }
+
+  function renderAssets(assets) {
+    const listEl = document.getElementById('assetList');
+    const typeLabel = { bank: 'Bank Account', investment: 'Investment', credit_card: 'Credit Card', loan: 'Loan' };
+
+    if (assets.length === 0) {
+      listEl.innerHTML = `<div class="empty">No accounts added yet.</div>`;
+    } else {
+      listEl.innerHTML = assets.map(a => `
+        <div class="txn">
+          <div class="date">${typeLabel[a.type] || a.type}</div>
+          <div class="desc">${a.name}<span class="acct">${a.identifier || ''}</span></div>
+          <div class="stamp ${a.type === 'credit_card' || a.type === 'loan' ? 'expense' : 'income'}">${a.type === 'credit_card' || a.type === 'loan' ? 'Liability' : 'Asset'}</div>
+          <div class="amt ${a.type === 'credit_card' || a.type === 'loan' ? 'debit' : 'credit'}">${inr(a.value)}</div>
+        </div>`).join('');
+    }
+
+    const assetsSum = assets.filter(a => a.type === 'bank' || a.type === 'investment').reduce((s, a) => s + a.value, 0);
+    const liabSum = assets.filter(a => a.type === 'credit_card' || a.type === 'loan').reduce((s, a) => s + a.value, 0);
+    document.getElementById('assetsTotal').textContent = inr(assetsSum);
+    document.getElementById('liabilitiesTotal').textContent = inr(liabSum);
+    document.getElementById('netWorthTotal').textContent = inr(assetsSum - liabSum);
+  }
+
+  document.getElementById('manAddBtn').addEventListener('click', async () => {
+    const amount = parseFloat(document.getElementById('manAmount').value);
+    const type = document.getElementById('manType').value;
+    const desc = document.getElementById('manDesc').value.trim();
+    if (!amount || amount <= 0) { alert('Enter a valid amount'); return; }
+    if (!currentUid) { alert('Not signed in'); return; }
+
+    const category = categorize(type, desc);
+    const ts = Date.now();
+    const txnId = `manual_${ts}_${amount}`;
+    await setDoc(doc(db, 'users', currentUid, 'transactions', txnId), {
+      amount, type, category,
+      accountId: 'manual-entry',
+      counterparty: desc,
+      rawSms: desc,
+      timestamp: ts
+    });
+
+    document.getElementById('manAmount').value = '';
+    document.getElementById('manDesc').value = '';
+  });
 
   function listenToTransactions(uid) {
     const q = query(collection(db, 'users', uid, 'transactions'), orderBy('timestamp', 'desc'), limit(200));
