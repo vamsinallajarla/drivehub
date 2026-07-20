@@ -535,8 +535,44 @@
 
     <section class="page" id="page-settings">
       <h2>Settings</h2>
+
       <div class="ledger">
-        <div class="ledger-head"><h3>iPhone Shortcut key</h3></div>
+        <div class="ledger-head"><h3>Direct Firestore access (no billing required)</h3></div>
+        <div class="ledger-form">
+          <div class="footnote" style="margin-top:0;margin-bottom:14px;">
+            This links an email/password sign-in to your <b>same account</b> (same data, same UID) so your Shortcut can
+            authenticate directly against Firestore without needing a paid Cloud Function.
+          </div>
+          <div class="row">
+            <input id="linkEmail" type="email" placeholder="Any email (doesn't need to match your Google email)" />
+            <input id="linkPassword" type="password" placeholder="Password for the Shortcut to use" />
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <button id="linkAccountBtn">Link / update Shortcut credentials</button>
+          </div>
+          <div class="footnote" id="linkStatus" style="margin-top:10px;"></div>
+
+          <div class="footnote" style="margin-top:20px;">
+            <b>Values your Shortcut needs:</b><br>
+            Project ID: <code id="cfgProjectId">—</code><br>
+            Web API Key: <code id="cfgApiKey">—</code><br>
+            Your UID: <code id="cfgUid">—</code><br><br>
+            <b>Step 1 — sign in (per run):</b> POST to<br>
+            <code>https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=YOUR_API_KEY</code><br>
+            Body: <code>{"email":"you@example.com","password":"yourpassword","returnSecureToken":true}</code><br>
+            → From the response, grab <code>idToken</code> as a variable.<br><br>
+            <b>Step 2 — write the transaction:</b> POST to<br>
+            <code>https://firestore.googleapis.com/v1/projects/YOUR_PROJECT_ID/databases/(default)/documents/users/YOUR_UID/transactions</code><br>
+            Header: <code>Authorization: Bearer &lt;idToken&gt;</code><br>
+            Body:
+            <code>{"fields":{"amount":{"doubleValue":1500},"type":{"stringValue":"credit"},"rawSms":{"stringValue":"full SMS text"},"accountId":{"stringValue":"iphone-shortcut"},"timestamp":{"integerValue":"1737000000000"}}}</code><br><br>
+            You don't need to set a category — the dashboard now categorizes automatically from <code>rawSms</code> and <code>type</code> the same way manual entries do.
+          </div>
+        </div>
+      </div>
+
+      <div class="ledger">
+        <div class="ledger-head"><h3>Cloud Function key (only if you upgrade to Blaze)</h3></div>
         <div class="ledger-form">
           <div class="row">
             <button id="genKeyBtn">Generate key</button>
@@ -559,7 +595,8 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
-    getAuth, GoogleAuthProvider, signInWithPopup, signOut
+    getAuth, GoogleAuthProvider, signInWithPopup, signOut,
+    linkWithCredential, EmailAuthProvider
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import {
     getFirestore, collection, onSnapshot, query, orderBy, limit, doc, setDoc, deleteDoc
@@ -631,7 +668,29 @@
     statusBadge.className = 'status live';
     listenToTransactions(user.uid);
     listenToAssets(user.uid);
+
+    document.getElementById('cfgProjectId').textContent = firebaseConfig.projectId;
+    document.getElementById('cfgApiKey').textContent = firebaseConfig.apiKey;
+    document.getElementById('cfgUid').textContent = user.uid;
   }
+
+  document.getElementById('linkAccountBtn').addEventListener('click', async () => {
+    const email = document.getElementById('linkEmail').value.trim();
+    const password = document.getElementById('linkPassword').value;
+    const statusEl = document.getElementById('linkStatus');
+    if (!email || !password) { statusEl.textContent = 'Enter an email and password.'; return; }
+    try {
+      const cred = EmailAuthProvider.credential(email, password);
+      await linkWithCredential(auth.currentUser, cred);
+      statusEl.textContent = 'Linked. Use this email/password in your Shortcut\'s sign-in step.';
+    } catch (e) {
+      if (e.code === 'auth/provider-already-linked' || e.code === 'auth/credential-already-in-use') {
+        statusEl.textContent = 'Already linked (or in use elsewhere). If you want to change the password, sign out, sign back in with Google, then unlink and relink from the Firebase Console > Authentication > Users.';
+      } else {
+        statusEl.textContent = 'Failed: ' + e.message;
+      }
+    }
+  });
 
   document.getElementById('googleBtn').addEventListener('click', async () => {
     try {
@@ -719,7 +778,13 @@
     const q = query(collection(db, 'users', uid, 'transactions'), orderBy('timestamp', 'desc'), limit(200));
     onSnapshot(q, (snap) => {
       const txns = [];
-      snap.forEach(d => txns.push({ id: d.id, ...d.data() }));
+      snap.forEach(d => {
+        const data = d.data();
+        if (!data.category) {
+          data.category = categorize(data.type, data.rawSms || data.counterparty || '');
+        }
+        txns.push({ id: d.id, ...data });
+      });
       renderTransactions(txns);
     });
   }
