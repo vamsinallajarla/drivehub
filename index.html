@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Passbook — Bank Transaction Dashboard</title>
+<title>Passbook — Financial Ledger</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -25,66 +25,48 @@
     font-family:'IBM Plex Sans', sans-serif;
     min-height:100vh;
   }
-  .wrap{max-width:920px;margin:0 auto;padding:32px 24px 80px;}
 
-  /* Header — passbook cover */
-  .cover{
-    background:var(--ink);
-    color:var(--paper);
-    border-radius:6px;
-    padding:28px 32px;
-    position:relative;
-    overflow:hidden;
-    margin-bottom:28px;
-  }
-  .cover::before{
-    content:"";
-    position:absolute; inset:8px;
-    border:1px solid rgba(247,244,236,0.25);
-    border-radius:3px;
-    pointer-events:none;
-  }
-  .cover .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
-  .cover h1{font-family:'Fraunces',serif;font-weight:600;font-size:32px;margin:0 0 4px;}
-  .cover .sub{font-size:13px;color:rgba(247,244,236,0.7);}
-  .cover .status{
-    position:absolute; top:24px; right:28px;
-    font-family:'IBM Plex Mono',monospace;font-size:11px;
-    padding:4px 10px; border:1px solid rgba(247,244,236,0.35); border-radius:20px;
-  }
-  .status.live{color:#8fd4ab;border-color:#8fd4ab55;}
-  .status.off{color:#e0a89c;border-color:#e0a89c55;}
+  .signin-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .signin-card{background:var(--paper-raised);border:1px solid var(--rule);border-radius:6px;padding:32px;max-width:420px;width:100%;}
+  .signin-card .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
+  .signin-card h1{font-family:'Fraunces',serif;font-weight:600;font-size:28px;margin:0 0 4px;}
+  .signin-card .sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
 
-  /* Sign-in card */
-  .signin{
-    background:var(--paper-raised);
-    border:1px solid var(--rule);
-    border-radius:6px;
-    padding:24px;
-    margin-bottom:28px;
-  }
-  .signin h3{font-family:'Fraunces',serif;margin:0 0 12px;font-size:18px;}
   .row{display:flex;gap:10px;flex-wrap:wrap;}
-  input{
+  input, select{
     font-family:'IBM Plex Mono',monospace;
     padding:10px 12px;border:1px solid var(--rule);border-radius:4px;
-    background:#fff;font-size:14px;flex:1;min-width:180px;
+    background:#fff;font-size:14px;flex:1;min-width:160px;
   }
   button{
     font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13px;
     padding:10px 18px;border:none;border-radius:4px;
-    background:var(--ink);color:var(--paper);cursor:pointer;
+    background:var(--ink);color:var(--paper);cursor:pointer;white-space:nowrap;
   }
   button:hover{background:#2c3a4a;}
   button.ghost{background:transparent;color:var(--ink);border:1px solid var(--rule);}
-  #recaptcha-container{margin-top:10px;}
 
-  /* Summary ledger strip */
-  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px;}
-  .sum-card{
-    background:var(--paper-raised);border:1px solid var(--rule);border-radius:6px;
-    padding:16px 18px;position:relative;
-  }
+  .app-shell{display:flex;min-height:100vh;}
+  .sidebar{width:230px;flex-shrink:0;background:var(--ink);color:var(--paper);padding:24px 16px;display:flex;flex-direction:column;}
+  .sidebar .brand .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;}
+  .sidebar .brand h1{font-family:'Fraunces',serif;font-weight:600;font-size:22px;margin:0 0 20px;}
+  .nav{display:flex;flex-direction:column;gap:2px;}
+  .nav-item{background:none;border:none;color:rgba(247,244,236,0.75);text-align:left;padding:10px 12px;border-radius:4px;font-size:13.5px;font-weight:500;cursor:pointer;}
+  .nav-item:hover{background:rgba(247,244,236,0.08);color:var(--paper);}
+  .nav-item.active{background:rgba(247,244,236,0.12);color:var(--paper);font-weight:600;}
+  .sidebar-footer{margin-top:auto;padding-top:16px;border-top:1px solid rgba(247,244,236,0.15);}
+  .status{font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:4px 10px;border:1px solid rgba(247,244,236,0.35);border-radius:20px;display:inline-block;}
+  .status.live{color:#8fd4ab;border-color:#8fd4ab55;}
+  .status.off{color:#e0a89c;border-color:#e0a89c55;}
+  #signOutBtn{margin-top:10px;font-size:11.5px;padding:6px 12px;background:transparent;border:1px solid rgba(247,244,236,0.3);color:var(--paper);}
+
+  .main{flex:1;padding:32px 32px 80px;max-width:920px;}
+  .page{display:none;}
+  .page.active{display:block;}
+  .page h2{font-family:'Fraunces',serif;font-size:24px;margin:0 0 20px;}
+
+  .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:28px;}
+  .sum-card{background:var(--paper-raised);border:1px solid var(--rule);border-radius:6px;padding:16px 18px;position:relative;}
   .sum-card .label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
   .sum-card .amt{font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:600;margin-top:6px;font-variant-numeric:tabular-nums;}
   .sum-card.income .amt{color:var(--credit);}
@@ -96,26 +78,17 @@
   .transfer .bar > div{background:var(--gold);}
   .expense .bar > div{background:var(--debit);}
 
-  /* Ledger table */
-  .ledger{background:var(--paper-raised);border:1px solid var(--rule);border-radius:6px;overflow:hidden;}
-  .ledger-head{
-    display:flex;justify-content:space-between;align-items:center;
-    padding:16px 20px;border-bottom:1px solid var(--rule);
-  }
+  .ledger{background:var(--paper-raised);border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin-bottom:20px;}
+  .ledger-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--rule);}
   .ledger-head h3{font-family:'Fraunces',serif;margin:0;font-size:18px;}
   .ledger-head .count{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);}
-  .txn{
-    display:grid;grid-template-columns:90px 1fr auto auto;gap:14px;align-items:center;
-    padding:13px 20px;border-bottom:1px dashed var(--rule);
-  }
+  .ledger-form{padding:16px 20px;border-bottom:1px solid var(--rule);}
+  .txn{display:grid;grid-template-columns:110px 1fr auto auto;gap:14px;align-items:center;padding:13px 20px;border-bottom:1px dashed var(--rule);}
   .txn:last-child{border-bottom:none;}
   .txn .date{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);}
   .txn .desc{font-size:13.5px;}
   .txn .desc .acct{display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);margin-top:2px;}
-  .stamp{
-    font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
-    padding:3px 8px;border-radius:3px;border:1.5px solid; transform:rotate(-2deg); white-space:nowrap;
-  }
+  .stamp{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:3px;border:1.5px solid; transform:rotate(-2deg); white-space:nowrap;}
   .stamp.income{color:var(--credit);border-color:var(--credit);}
   .stamp.transfer{color:var(--gold);border-color:var(--gold);}
   .stamp.expense{color:var(--debit);border-color:var(--debit);}
@@ -126,24 +99,18 @@
   .empty{padding:60px 20px;text-align:center;color:var(--muted);font-size:13.5px;}
   .empty .big{font-family:'Fraunces',serif;font-size:20px;color:var(--ink);margin-bottom:8px;}
 
-  .footnote{margin-top:20px;font-size:11.5px;color:var(--muted);text-align:center;}
+  .footnote{margin-top:20px;font-size:11.5px;color:var(--muted);}
+  code{background:rgba(0,0,0,0.05);padding:1px 5px;border-radius:3px;font-size:11px;}
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <div class="cover">
+<div class="signin-wrap" id="signinWrap">
+  <div class="signin-card">
     <div class="eyebrow">Bank Sync · Passbook</div>
     <h1>Your Ledger</h1>
-    <div class="sub">Every SMS-verified credit and debit, in one place.</div>
-    <div id="statusBadge" class="status off">not connected</div>
-  </div>
-
-  <div class="signin" id="signinCard">
-    <h3>Sign in</h3>
-    <div class="row">
-      <button id="googleBtn">Continue with Google</button>
-    </div>
+    <div class="sub">Sign in to view your accounts and transactions.</div>
+    <div class="row"><button id="googleBtn">Continue with Google</button></div>
     <div class="row" style="margin-top:14px;">
       <input id="emailInput" type="email" placeholder="Email" />
       <input id="passwordInput" type="password" placeholder="Password" />
@@ -153,117 +120,210 @@
       <button class="ghost" id="signUpBtn">Create account</button>
     </div>
   </div>
-  <!-- recaptcha-container removed: no longer needed without phone auth -->
+</div>
 
-  <div class="signin" id="apiKeyCard" style="display:none;">
-    <h3>iPhone Shortcut key</h3>
-    <div class="row">
-      <button id="genKeyBtn">Generate key</button>
-      <input id="apiKeyOutput" type="text" readonly placeholder="Your key will appear here" />
-      <button class="ghost" id="copyKeyBtn">Copy</button>
+<div class="app-shell" id="appShell" style="display:none;">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="eyebrow">Bank Sync · Passbook</div>
+      <h1>Your Ledger</h1>
     </div>
-    <div class="footnote" style="margin-top:10px;text-align:left;">
-      Paste this into your Shortcut's "Get Contents of URL" action as header <code>x-api-key</code>.
-      Endpoint: <code>https://REGION-PROJECT.cloudfunctions.net/ingestTransaction</code> · POST · JSON body:
-      <code>{"amount":1500,"type":"credit","rawText":"full SMS text"}</code>
+    <nav class="nav">
+      <button class="nav-item active" data-page="overview">Overview</button>
+      <button class="nav-item" data-page="transactions">Transactions</button>
+      <button class="nav-item" data-page="bank">Bank Accounts</button>
+      <button class="nav-item" data-page="investment">Investments</button>
+      <button class="nav-item" data-page="credit_card">Credit Cards</button>
+      <button class="nav-item" data-page="loan">Loans</button>
+      <button class="nav-item" data-page="settings">Settings</button>
+    </nav>
+    <div class="sidebar-footer">
+      <div id="statusBadge" class="status off">not connected</div>
+      <button id="signOutBtn">Sign out</button>
     </div>
-  </div>
+  </aside>
 
-  <div id="appContent" style="display:none;">
-  <div class="summary">
-    <div class="sum-card income">
-      <div class="label">Income (Salary)</div>
-      <div class="amt" id="incomeTotal">₹0</div>
-      <div class="bar"><div id="incomeBar" style="width:0%"></div></div>
-    </div>
-    <div class="sum-card transfer">
-      <div class="label">Transfer</div>
-      <div class="amt" id="transferTotal">₹0</div>
-      <div class="bar"><div id="transferBar" style="width:0%"></div></div>
-    </div>
-    <div class="sum-card expense">
-      <div class="label">Expense (Debits)</div>
-      <div class="amt" id="expenseTotal">₹0</div>
-      <div class="bar"><div id="expenseBar" style="width:0%"></div></div>
-    </div>
-  </div>
+  <main class="main">
 
-  <div class="ledger" id="manualEntryCard" style="margin-bottom:20px;">
-    <div class="ledger-head">
-      <h3>Add transaction</h3>
-    </div>
-    <div style="padding:16px 20px;">
-      <div class="row">
-        <input id="manAmount" type="number" step="0.01" placeholder="Amount" />
-        <select id="manType" style="font-family:'IBM Plex Mono',monospace;padding:10px 12px;border:1px solid var(--rule);border-radius:4px;background:#fff;font-size:14px;">
-          <option value="credit">Credit (money in)</option>
-          <option value="debit">Debit (money out)</option>
-        </select>
+    <section class="page active" id="page-overview">
+      <h2>Overview</h2>
+      <div class="summary">
+        <div class="sum-card income">
+          <div class="label">Income (Salary)</div>
+          <div class="amt" id="incomeTotal">₹0</div>
+          <div class="bar"><div id="incomeBar" style="width:0%"></div></div>
+        </div>
+        <div class="sum-card transfer">
+          <div class="label">Transfer</div>
+          <div class="amt" id="transferTotal">₹0</div>
+          <div class="bar"><div id="transferBar" style="width:0%"></div></div>
+        </div>
+        <div class="sum-card expense">
+          <div class="label">Expense (Debits)</div>
+          <div class="amt" id="expenseTotal">₹0</div>
+          <div class="bar"><div id="expenseBar" style="width:0%"></div></div>
+        </div>
       </div>
-      <div class="row" style="margin-top:10px;">
-        <input id="manDesc" type="text" placeholder="Description (e.g. Salary from Acme Corp, Amazon purchase)" />
+      <div class="summary">
+        <div class="sum-card income">
+          <div class="label">Assets (Bank + Investments)</div>
+          <div class="amt" id="assetsTotal">₹0</div>
+        </div>
+        <div class="sum-card expense">
+          <div class="label">Liabilities (Cards + Loans)</div>
+          <div class="amt" id="liabilitiesTotal">₹0</div>
+        </div>
+        <div class="sum-card transfer">
+          <div class="label">Net Worth</div>
+          <div class="amt" id="netWorthTotal">₹0</div>
+        </div>
+        <div class="sum-card expense">
+          <div class="label">Monthly EMI Commitment</div>
+          <div class="amt" id="emiTotal">₹0</div>
+        </div>
       </div>
-      <div class="row" style="margin-top:10px;">
-        <button id="manAddBtn">Add transaction</button>
-      </div>
-    </div>
-  </div>
+      <div class="footnote">Bank-only sync via SMS. Salary credits are the only entries counted as Income; every other credit is Transfer.</div>
+    </section>
 
-  <div class="ledger">
-    <div class="ledger-head">
-      <h3>Transactions</h3>
-      <div class="count" id="txnCount">0 entries</div>
-    </div>
-    <div id="txnList">
-      <div class="empty">
-        <div class="big">No entries yet</div>
-        Sign in above — transactions from your Shortcut will appear here in real time.
+    <section class="page" id="page-transactions">
+      <h2>Transactions</h2>
+      <div class="ledger">
+        <div class="ledger-head"><h3>Add transaction</h3></div>
+        <div class="ledger-form">
+          <div class="row">
+            <input id="manAmount" type="number" step="0.01" placeholder="Amount" />
+            <select id="manType">
+              <option value="credit">Credit (money in)</option>
+              <option value="debit">Debit (money out)</option>
+            </select>
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <input id="manDesc" type="text" placeholder="Description (e.g. Salary from Acme Corp, Amazon purchase)" />
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <button id="manAddBtn">Add transaction</button>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
+      <div class="ledger">
+        <div class="ledger-head">
+          <h3>Ledger</h3>
+          <div class="count" id="txnCount">0 entries</div>
+        </div>
+        <div id="txnList">
+          <div class="empty"><div class="big">No entries yet</div>Waiting for the first synced SMS or manual entry.</div>
+        </div>
+      </div>
+    </section>
 
-  <div class="summary" style="margin-top:20px;">
-    <div class="sum-card income">
-      <div class="label">Assets (Bank + Investments)</div>
-      <div class="amt" id="assetsTotal">₹0</div>
-    </div>
-    <div class="sum-card expense">
-      <div class="label">Liabilities (Cards + Loans)</div>
-      <div class="amt" id="liabilitiesTotal">₹0</div>
-    </div>
-    <div class="sum-card transfer">
-      <div class="label">Net Worth</div>
-      <div class="amt" id="netWorthTotal">₹0</div>
-    </div>
-  </div>
+    <section class="page" id="page-bank">
+      <h2>Bank Accounts</h2>
+      <div class="ledger">
+        <div class="ledger-head"><h3>Add bank account</h3></div>
+        <div class="ledger-form">
+          <div class="row">
+            <input id="bank_name" type="text" placeholder="Name (e.g. HDFC Savings)" />
+            <input id="bank_identifier" type="text" placeholder="Linked mobile number" />
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <input id="bank_balance" type="number" step="0.01" placeholder="Current balance" />
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <button id="bank_addBtn">Save</button>
+          </div>
+        </div>
+      </div>
+      <div class="ledger"><div id="list-bank"></div></div>
+    </section>
 
-  <div class="ledger" id="assetEntryCard" style="margin-top:20px;margin-bottom:20px;">
-    <div class="ledger-head">
-      <h3>Add / update account or asset</h3>
-    </div>
-    <div style="padding:16px 20px;">
-      <div class="row">
-        <select id="assetType" style="font-family:'IBM Plex Mono',monospace;padding:10px 12px;border:1px solid var(--rule);border-radius:4px;background:#fff;font-size:14px;">
-          <option value="bank">Bank Account</option>
-          <option value="investment">Investment</option>
-          <option value="credit_card">Credit Card</option>
-          <option value="loan">Loan</option>
-        </select>
-        <input id="assetName" type="text" placeholder="Name (e.g. HDFC Savings, Zerodha, ICICI Card, Home Loan)" />
+    <section class="page" id="page-investment">
+      <h2>Investments</h2>
+      <div class="ledger">
+        <div class="ledger-head"><h3>Add investment</h3></div>
+        <div class="ledger-form">
+          <div class="row">
+            <input id="investment_name" type="text" placeholder="Name (e.g. Zerodha, PPF, Mutual Fund)" />
+            <input id="investment_identifier" type="text" placeholder="PAN" />
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <input id="investment_currentValue" type="number" step="0.01" placeholder="Current value" />
+            <input id="investment_invested" type="number" step="0.01" placeholder="Total invested (optional)" />
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <button id="investment_addBtn">Save</button>
+          </div>
+        </div>
       </div>
-      <div class="row" style="margin-top:10px;">
-        <input id="assetIdentifier" type="text" placeholder="Linked mobile number (bank) or PAN (investment/card/loan)" />
-        <input id="assetValue" type="number" step="0.01" placeholder="Balance / current value / outstanding" />
-      </div>
-      <div class="row" style="margin-top:10px;">
-        <button id="assetAddBtn">Save</button>
-      </div>
-    </div>
-    <div id="assetList"></div>
-  </div>
+      <div class="ledger"><div id="list-investment"></div></div>
+    </section>
 
-  <div class="footnote">Bank-only sync via SMS. Salary credits are the only entries counted as Income; every other credit is Transfer.</div>
-  </div>
+    <section class="page" id="page-credit_card">
+      <h2>Credit Cards</h2>
+      <div class="ledger">
+        <div class="ledger-head"><h3>Add credit card</h3></div>
+        <div class="ledger-form">
+          <div class="row">
+            <input id="credit_card_name" type="text" placeholder="Name (e.g. ICICI Coral)" />
+            <input id="credit_card_identifier" type="text" placeholder="PAN" />
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <input id="credit_card_creditLimit" type="number" step="0.01" placeholder="Total credit limit" />
+            <input id="credit_card_outstanding" type="number" step="0.01" placeholder="Current outstanding" />
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <button id="credit_card_addBtn">Save</button>
+          </div>
+        </div>
+      </div>
+      <div class="ledger"><div id="list-credit_card"></div></div>
+    </section>
+
+    <section class="page" id="page-loan">
+      <h2>Loans</h2>
+      <div class="ledger">
+        <div class="ledger-head"><h3>Add loan</h3></div>
+        <div class="ledger-form">
+          <div class="row">
+            <input id="loan_name" type="text" placeholder="Name (e.g. Home Loan)" />
+            <input id="loan_identifier" type="text" placeholder="PAN" />
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <input id="loan_sanctioned" type="number" step="0.01" placeholder="Sanctioned / principal amount" />
+            <input id="loan_outstanding" type="number" step="0.01" placeholder="Current outstanding" />
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <input id="loan_emi" type="number" step="0.01" placeholder="Monthly EMI amount" />
+            <input id="loan_tenureLeftMonths" type="number" step="1" placeholder="Remaining tenure (months)" />
+            <input id="loan_nextDueDate" type="date" />
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <button id="loan_addBtn">Save</button>
+          </div>
+        </div>
+      </div>
+      <div class="ledger"><div id="list-loan"></div></div>
+    </section>
+
+    <section class="page" id="page-settings">
+      <h2>Settings</h2>
+      <div class="ledger">
+        <div class="ledger-head"><h3>iPhone Shortcut key</h3></div>
+        <div class="ledger-form">
+          <div class="row">
+            <button id="genKeyBtn">Generate key</button>
+            <input id="apiKeyOutput" type="text" readonly placeholder="Your key will appear here" />
+            <button class="ghost" id="copyKeyBtn">Copy</button>
+          </div>
+          <div class="footnote">
+            Paste this into your Shortcut's "Get Contents of URL" action as header <code>x-api-key</code>.
+            Endpoint: <code>https://REGION-PROJECT.cloudfunctions.net/ingestTransaction</code> · POST · JSON body:
+            <code>{"amount":1500,"type":"credit","rawText":"full SMS text"}</code>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
 </div>
 
 <script src="./firebase-config.js"></script>
@@ -272,7 +332,7 @@
   import {
     getAuth, GoogleAuthProvider, signInWithPopup,
     createUserWithEmailAndPassword, signInWithEmailAndPassword,
-    onAuthStateChanged
+    signOut
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import {
     getFirestore, collection, onSnapshot, query, orderBy, limit, doc, setDoc
@@ -282,6 +342,9 @@
     const bytes = new Uint8Array(len);
     crypto.getRandomValues(bytes);
     return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  }
+  function inr(n) {
+    return '₹' + Math.round(n || 0).toLocaleString('en-IN');
   }
 
   const firebaseConfig = window.DEFAULT_FIREBASE_CONFIG;
@@ -293,42 +356,34 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  let confirmationResult = null;
   const statusBadge = document.getElementById('statusBadge');
+  let currentUid = null;
+
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('page-' + btn.dataset.page).classList.add('active');
+    });
+  });
 
   async function onAuthSuccess(user) {
     currentUid = user.uid;
-    await setDoc(doc(db, 'users', user.uid), {
-      email: user.email || '',
-      createdAt: Date.now()
-    }, { merge: true });
-    document.getElementById('signinCard').style.display = 'none';
-    document.getElementById('apiKeyCard').style.display = 'block';
-    document.getElementById('appContent').style.display = 'block';
+    await setDoc(doc(db, 'users', user.uid), { email: user.email || '', createdAt: Date.now() }, { merge: true });
+    document.getElementById('signinWrap').style.display = 'none';
+    document.getElementById('appShell').style.display = 'flex';
     statusBadge.textContent = 'synced · ' + (user.email || user.uid);
     statusBadge.className = 'status live';
     listenToTransactions(user.uid);
     listenToAssets(user.uid);
-
-    document.getElementById('genKeyBtn').addEventListener('click', async () => {
-      const key = randomKey();
-      await setDoc(doc(db, 'apiKeys', key), { uid: user.uid, createdAt: Date.now() });
-      document.getElementById('apiKeyOutput').value = key;
-    });
-    document.getElementById('copyKeyBtn').addEventListener('click', () => {
-      const el = document.getElementById('apiKeyOutput');
-      el.select();
-      navigator.clipboard.writeText(el.value);
-    });
   }
 
   document.getElementById('googleBtn').addEventListener('click', async () => {
     try {
       const result = await signInWithPopup(auth, new GoogleAuthProvider());
       onAuthSuccess(result.user);
-    } catch (e) {
-      alert('Google sign-in failed: ' + e.message);
-    }
+    } catch (e) { alert('Google sign-in failed: ' + e.message); }
   });
 
   document.getElementById('signInBtn').addEventListener('click', async () => {
@@ -337,9 +392,7 @@
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
       onAuthSuccess(result.user);
-    } catch (e) {
-      alert('Sign-in failed: ' + e.message);
-    }
+    } catch (e) { alert('Sign-in failed: ' + e.message); }
   });
 
   document.getElementById('signUpBtn').addEventListener('click', async () => {
@@ -348,71 +401,33 @@
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       onAuthSuccess(result.user);
-    } catch (e) {
-      alert('Account creation failed: ' + e.message);
-    }
+    } catch (e) { alert('Account creation failed: ' + e.message); }
   });
 
-  function inr(n) {
-    return '₹' + Math.round(n).toLocaleString('en-IN');
-  }
+  document.getElementById('signOutBtn').addEventListener('click', async () => {
+    await signOut(auth);
+    currentUid = null;
+    document.getElementById('appShell').style.display = 'none';
+    document.getElementById('signinWrap').style.display = 'flex';
+  });
+
+  document.getElementById('genKeyBtn').addEventListener('click', async () => {
+    if (!currentUid) return;
+    const key = randomKey();
+    await setDoc(doc(db, 'apiKeys', key), { uid: currentUid, createdAt: Date.now() });
+    document.getElementById('apiKeyOutput').value = key;
+  });
+  document.getElementById('copyKeyBtn').addEventListener('click', () => {
+    const el = document.getElementById('apiKeyOutput');
+    el.select();
+    navigator.clipboard.writeText(el.value);
+  });
 
   const SALARY_KEYWORDS = ['SALARY', 'SAL CREDIT', 'SAL-', 'PAYROLL', 'WAGES', 'STIPEND'];
   function categorize(type, text) {
     if (type !== 'credit') return 'Expense';
     const upper = (text || '').toUpperCase();
     return SALARY_KEYWORDS.some((k) => upper.includes(k)) ? 'Income' : 'Transfer';
-  }
-
-  let currentUid = null;
-
-  document.getElementById('assetAddBtn').addEventListener('click', async () => {
-    if (!currentUid) { alert('Not signed in'); return; }
-    const type = document.getElementById('assetType').value;
-    const name = document.getElementById('assetName').value.trim();
-    const identifier = document.getElementById('assetIdentifier').value.trim();
-    const value = parseFloat(document.getElementById('assetValue').value);
-    if (!name || isNaN(value)) { alert('Enter a name and a numeric value'); return; }
-
-    const assetId = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 60) || `asset_${Date.now()}`;
-    await setDoc(doc(db, 'users', currentUid, 'assets', assetId), {
-      type, name, identifier, value, updatedAt: Date.now()
-    });
-
-    document.getElementById('assetName').value = '';
-    document.getElementById('assetIdentifier').value = '';
-    document.getElementById('assetValue').value = '';
-  });
-
-  function listenToAssets(uid) {
-    onSnapshot(collection(db, 'users', uid, 'assets'), (snap) => {
-      const assets = [];
-      snap.forEach(d => assets.push({ id: d.id, ...d.data() }));
-      renderAssets(assets);
-    });
-  }
-
-  function renderAssets(assets) {
-    const listEl = document.getElementById('assetList');
-    const typeLabel = { bank: 'Bank Account', investment: 'Investment', credit_card: 'Credit Card', loan: 'Loan' };
-
-    if (assets.length === 0) {
-      listEl.innerHTML = `<div class="empty">No accounts added yet.</div>`;
-    } else {
-      listEl.innerHTML = assets.map(a => `
-        <div class="txn">
-          <div class="date">${typeLabel[a.type] || a.type}</div>
-          <div class="desc">${a.name}<span class="acct">${a.identifier || ''}</span></div>
-          <div class="stamp ${a.type === 'credit_card' || a.type === 'loan' ? 'expense' : 'income'}">${a.type === 'credit_card' || a.type === 'loan' ? 'Liability' : 'Asset'}</div>
-          <div class="amt ${a.type === 'credit_card' || a.type === 'loan' ? 'debit' : 'credit'}">${inr(a.value)}</div>
-        </div>`).join('');
-    }
-
-    const assetsSum = assets.filter(a => a.type === 'bank' || a.type === 'investment').reduce((s, a) => s + a.value, 0);
-    const liabSum = assets.filter(a => a.type === 'credit_card' || a.type === 'loan').reduce((s, a) => s + a.value, 0);
-    document.getElementById('assetsTotal').textContent = inr(assetsSum);
-    document.getElementById('liabilitiesTotal').textContent = inr(liabSum);
-    document.getElementById('netWorthTotal').textContent = inr(assetsSum - liabSum);
   }
 
   document.getElementById('manAddBtn').addEventListener('click', async () => {
@@ -426,13 +441,8 @@
     const ts = Date.now();
     const txnId = `manual_${ts}_${amount}`;
     await setDoc(doc(db, 'users', currentUid, 'transactions', txnId), {
-      amount, type, category,
-      accountId: 'manual-entry',
-      counterparty: desc,
-      rawSms: desc,
-      timestamp: ts
+      amount, type, category, accountId: 'manual-entry', counterparty: desc, rawSms: desc, timestamp: ts
     });
-
     document.getElementById('manAmount').value = '';
     document.getElementById('manDesc').value = '';
   });
@@ -442,27 +452,26 @@
     onSnapshot(q, (snap) => {
       const txns = [];
       snap.forEach(d => txns.push({ id: d.id, ...d.data() }));
-      render(txns);
+      renderTransactions(txns);
     });
   }
 
-  function render(txns) {
+  function renderTransactions(txns) {
     const listEl = document.getElementById('txnList');
     document.getElementById('txnCount').textContent = txns.length + ' entries';
 
     if (txns.length === 0) {
-      listEl.innerHTML = `<div class="empty"><div class="big">No entries yet</div>Waiting for the first synced SMS.</div>`;
+      listEl.innerHTML = `<div class="empty"><div class="big">No entries yet</div>Waiting for the first synced SMS or manual entry.</div>`;
     } else {
       listEl.innerHTML = txns.map(t => {
         const isCredit = t.type === 'credit';
         const stampClass = t.category === 'Income' ? 'income' : (t.category === 'Transfer' ? 'transfer' : 'expense');
-        const stampLabel = t.category === 'Income' ? 'Income' : (t.category === 'Transfer' ? 'Transfer' : 'Expense');
         const date = t.timestamp ? new Date(t.timestamp).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—';
         return `
           <div class="txn">
             <div class="date">${date}</div>
             <div class="desc">${t.counterparty || t.accountId || 'Unlabeled'}<span class="acct">${t.accountId || ''}</span></div>
-            <div class="stamp ${stampClass}">${stampLabel}</div>
+            <div class="stamp ${stampClass}">${t.category}</div>
             <div class="amt ${isCredit ? 'credit' : 'debit'}">${isCredit ? '+' : '−'}${inr(t.amount)}</div>
           </div>`;
       }).join('');
@@ -479,6 +488,115 @@
     document.getElementById('incomeBar').style.width = (income / max * 100) + '%';
     document.getElementById('transferBar').style.width = (transfer / max * 100) + '%';
     document.getElementById('expenseBar').style.width = (expense / max * 100) + '%';
+  }
+
+  let latestAssets = [];
+
+  function setupAssetForm(type, fieldNames) {
+    document.getElementById(`${type}_addBtn`).addEventListener('click', async () => {
+      if (!currentUid) { alert('Not signed in'); return; }
+      const name = document.getElementById(`${type}_name`).value.trim();
+      const identifier = document.getElementById(`${type}_identifier`).value.trim();
+      if (!name) { alert('Enter a name'); return; }
+
+      const data = { type, name, identifier, updatedAt: Date.now() };
+      for (const f of fieldNames) {
+        const el = document.getElementById(`${type}_${f}`);
+        if (!el) continue;
+        if (el.type === 'number') {
+          const v = parseFloat(el.value);
+          if (!isNaN(v)) data[f] = v;
+        } else if (el.value) {
+          data[f] = el.value;
+        }
+      }
+
+      const assetId = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 60) || `asset_${Date.now()}`;
+      await setDoc(doc(db, 'users', currentUid, 'assets', assetId), data);
+
+      document.getElementById(`${type}_name`).value = '';
+      document.getElementById(`${type}_identifier`).value = '';
+      fieldNames.forEach(f => {
+        const el = document.getElementById(`${type}_${f}`);
+        if (el) el.value = '';
+      });
+    });
+  }
+
+  setupAssetForm('bank', ['balance']);
+  setupAssetForm('investment', ['currentValue', 'invested']);
+  setupAssetForm('credit_card', ['creditLimit', 'outstanding']);
+  setupAssetForm('loan', ['sanctioned', 'outstanding', 'emi', 'tenureLeftMonths', 'nextDueDate']);
+
+  function listenToAssets(uid) {
+    onSnapshot(collection(db, 'users', uid, 'assets'), (snap) => {
+      latestAssets = [];
+      snap.forEach(d => latestAssets.push({ id: d.id, ...d.data() }));
+      renderAssets();
+    });
+  }
+
+  function detailLine(a) {
+    if (a.type === 'bank') return inr(a.balance);
+    if (a.type === 'investment') {
+      const gain = a.invested ? (a.currentValue - a.invested) : null;
+      return inr(a.currentValue) + (gain !== null ? ` <span style="font-size:11px;color:${gain >= 0 ? 'var(--credit)' : 'var(--debit)'}">(${gain >= 0 ? '+' : ''}${inr(gain)})</span>` : '');
+    }
+    if (a.type === 'credit_card') {
+      const available = (a.creditLimit || 0) - (a.outstanding || 0);
+      return `${inr(a.outstanding)} <span style="font-size:11px;color:var(--muted)">of ${inr(a.creditLimit)} limit · ${inr(available)} available</span>`;
+    }
+    if (a.type === 'loan') {
+      let line = `${inr(a.outstanding)} <span style="font-size:11px;color:var(--muted)">of ${inr(a.sanctioned)} sanctioned</span>`;
+      if (a.emi) line += `<br><span style="font-size:11px;color:var(--muted)">EMI ${inr(a.emi)}/mo${a.tenureLeftMonths ? ' · ' + a.tenureLeftMonths + ' mo left' : ''}</span>`;
+      if (a.nextDueDate) {
+        const days = Math.ceil((new Date(a.nextDueDate) - new Date()) / 86400000);
+        const dueColor = days <= 3 ? 'var(--debit)' : (days <= 7 ? 'var(--gold)' : 'var(--muted)');
+        const dueText = days < 0 ? `overdue ${Math.abs(days)}d` : (days === 0 ? 'due today' : `due in ${days}d`);
+        line += ` <span style="font-size:11px;color:${dueColor};font-weight:600;">· ${dueText}</span>`;
+      }
+      return line;
+    }
+    return '';
+  }
+
+  function renderList(type, containerId) {
+    const items = latestAssets.filter(a => a.type === type);
+    const listEl = document.getElementById(containerId);
+    const isLiability = type === 'credit_card' || type === 'loan';
+    if (items.length === 0) {
+      listEl.innerHTML = `<div class="empty">Nothing added yet.</div>`;
+    } else {
+      listEl.innerHTML = items.map(a => `
+        <div class="txn">
+          <div class="date">${a.identifier || ''}</div>
+          <div class="desc">${a.name}</div>
+          <div class="stamp ${isLiability ? 'expense' : 'income'}">${isLiability ? 'Liability' : 'Asset'}</div>
+          <div class="amt ${isLiability ? 'debit' : 'credit'}">${detailLine(a)}</div>
+        </div>`).join('');
+    }
+  }
+
+  function renderAssets() {
+    renderList('bank', 'list-bank');
+    renderList('investment', 'list-investment');
+    renderList('credit_card', 'list-credit_card');
+    renderList('loan', 'list-loan');
+
+    const assetsSum = latestAssets
+      .filter(a => a.type === 'bank' || a.type === 'investment')
+      .reduce((s, a) => s + (a.type === 'bank' ? (a.balance || 0) : (a.currentValue || 0)), 0);
+    const liabSum = latestAssets
+      .filter(a => a.type === 'credit_card' || a.type === 'loan')
+      .reduce((s, a) => s + (a.outstanding || 0), 0);
+    const emiSum = latestAssets
+      .filter(a => a.type === 'loan' && a.emi)
+      .reduce((s, a) => s + a.emi, 0);
+
+    document.getElementById('assetsTotal').textContent = inr(assetsSum);
+    document.getElementById('liabilitiesTotal').textContent = inr(liabSum);
+    document.getElementById('netWorthTotal').textContent = inr(assetsSum - liabSum);
+    document.getElementById('emiTotal').textContent = inr(emiSum);
   }
 </script>
 </body>
