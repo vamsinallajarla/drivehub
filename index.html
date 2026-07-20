@@ -177,7 +177,7 @@
       <div class="bar"><div id="incomeBar" style="width:0%"></div></div>
     </div>
     <div class="sum-card transfer">
-      <div class="label">Other Credit / Transfer</div>
+      <div class="label">Transfer</div>
       <div class="amt" id="transferTotal">₹0</div>
       <div class="bar"><div id="transferBar" style="width:0%"></div></div>
     </div>
@@ -262,7 +262,7 @@
     <div id="assetList"></div>
   </div>
 
-  <div class="footnote">Bank-only sync via SMS. Salary credits are the only entries counted as Income; every other credit is Other Credit/Transfer.</div>
+  <div class="footnote">Bank-only sync via SMS. Salary credits are the only entries counted as Income; every other credit is Transfer.</div>
   </div>
 </div>
 
@@ -361,7 +361,7 @@
   function categorize(type, text) {
     if (type !== 'credit') return 'Expense';
     const upper = (text || '').toUpperCase();
-    return SALARY_KEYWORDS.some((k) => upper.includes(k)) ? 'Income' : 'Other Credit/Transfer';
+    return SALARY_KEYWORDS.some((k) => upper.includes(k)) ? 'Income' : 'Transfer';
   }
 
   let currentUid = null;
@@ -455,8 +455,8 @@
     } else {
       listEl.innerHTML = txns.map(t => {
         const isCredit = t.type === 'credit';
-        const stampClass = t.category === 'Income' ? 'income' : (t.category === 'Other Credit/Transfer' ? 'transfer' : 'expense');
-        const stampLabel = t.category === 'Income' ? 'Income' : (t.category === 'Other Credit/Transfer' ? 'Transfer' : 'Expense');
+        const stampClass = t.category === 'Income' ? 'income' : (t.category === 'Transfer' ? 'transfer' : 'expense');
+        const stampLabel = t.category === 'Income' ? 'Income' : (t.category === 'Transfer' ? 'Transfer' : 'Expense');
         const date = t.timestamp ? new Date(t.timestamp).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—';
         return `
           <div class="txn">
@@ -469,7 +469,7 @@
     }
 
     const income = txns.filter(t => t.category === 'Income').reduce((s, t) => s + t.amount, 0);
-    const transfer = txns.filter(t => t.category === 'Other Credit/Transfer').reduce((s, t) => s + t.amount, 0);
+    const transfer = txns.filter(t => t.category === 'Transfer').reduce((s, t) => s + t.amount, 0);
     const expense = txns.filter(t => t.type === 'debit').reduce((s, t) => s + t.amount, 0);
     const max = Math.max(income, transfer, expense, 1);
 
