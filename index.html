@@ -205,6 +205,7 @@
   </div>
 </div>
 
+<script src="./firebase-config.js"></script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
@@ -222,7 +223,10 @@
     return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
   }
 
-  import { firebaseConfig } from './firebase-config.js';
+  const firebaseConfig = window.DEFAULT_FIREBASE_CONFIG;
+  if (!firebaseConfig) {
+    alert('firebase-config.js did not load or did not set window.DEFAULT_FIREBASE_CONFIG.');
+  }
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
