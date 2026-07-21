@@ -642,7 +642,7 @@
     linkWithCredential, EmailAuthProvider
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import {
-    getFirestore, collection, onSnapshot, query, orderBy, limit, doc, setDoc, deleteDoc, getDoc, getDocs
+    getFirestore, collection, onSnapshot, query, orderBy, limit, where, doc, setDoc, deleteDoc, getDoc, getDocs
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   function randomKey(len = 32) {
@@ -710,6 +710,7 @@
     statusBadge.textContent = 'synced · ' + (user.email || user.uid);
     statusBadge.className = 'status live';
     listenToTransactions(user.uid);
+    startInboxListener(user.uid);
     listenToAssets(user.uid);
 
     document.getElementById('cfgProjectId').textContent = firebaseConfig.projectId;
@@ -723,35 +724,54 @@
     document.getElementById('selfNamesInput').value = savedNames.join(', ');
   }
 
+  async function importInboxDocs(docs) {
+    let imported = 0;
+    for (const d of docs) {
+      const data = d.data();
+      if (data.processed) continue;
+      const rawSms = data.rawSms || data.body || '';
+      if (!rawSms) { await setDoc(doc(db, 'sms_inbox', d.id), { processed: true }, { merge: true }); continue; }
+
+      const parsed = parseRawSms(rawSms);
+      if (parsed) {
+        const ts = Date.now();
+        const txnId = `inbox_${d.id}`;
+        await setDoc(doc(db, 'users', currentUid, 'transactions', txnId), {
+          amount: parsed.amount,
+          type: parsed.type,
+          rawSms,
+          counterparty: parsed.counterparty || '',
+          accountId: 'sms-inbox',
+          timestamp: ts
+        });
+        await applyAccountBalanceUpdate(currentUid, rawSms, parsed.amount, parsed.type);
+        imported++;
+      }
+      await setDoc(doc(db, 'sms_inbox', d.id), { processed: true }, { merge: true });
+    }
+    return imported;
+  }
+
+  let inboxListenerUnsub = null;
+  function startInboxListener(uid) {
+    if (inboxListenerUnsub) return;
+    const q = query(collection(db, 'sms_inbox'), where('processed', '==', false));
+    inboxListenerUnsub = onSnapshot(q, async (snap) => {
+      if (snap.empty) return;
+      const statusEl = document.getElementById('inboxStatus');
+      if (statusEl) statusEl.textContent = 'New SMS detected — importing…';
+      const imported = await importInboxDocs(snap.docs);
+      if (statusEl) statusEl.textContent = imported ? `Auto-imported ${imported} new transaction${imported === 1 ? '' : 's'}.` : '';
+    });
+  }
+
   document.getElementById('pullInboxBtn').addEventListener('click', async () => {
     if (!currentUid) return;
     const statusEl = document.getElementById('inboxStatus');
     statusEl.textContent = 'Checking inbox…';
     try {
       const snap = await getDocs(collection(db, 'sms_inbox'));
-      let imported = 0;
-      for (const d of snap.docs) {
-        const data = d.data();
-        if (data.processed) continue;
-        const rawSms = data.rawSms || data.body || '';
-        if (!rawSms) { await setDoc(doc(db, 'sms_inbox', d.id), { processed: true }, { merge: true }); continue; }
-
-        const parsed = parseRawSms(rawSms);
-        if (parsed) {
-          const ts = Date.now();
-          const txnId = `inbox_${d.id}`;
-          await setDoc(doc(db, 'users', currentUid, 'transactions', txnId), {
-            amount: parsed.amount,
-            type: parsed.type,
-            rawSms,
-            counterparty: parsed.counterparty || '',
-            accountId: 'sms-inbox',
-            timestamp: ts
-          });
-          imported++;
-        }
-        await setDoc(doc(db, 'sms_inbox', d.id), { processed: true }, { merge: true });
-      }
+      const imported = await importInboxDocs(snap.docs);
       statusEl.textContent = imported ? `Imported ${imported} new transaction${imported === 1 ? '' : 's'}.` : 'No new messages.';
     } catch (e) {
       statusEl.textContent = 'Error: ' + e.message;
@@ -989,6 +1009,54 @@
     return { amount, type: bestType, counterparty: extractCounterparty(text) };
   }
 
+  // Pulls the bank's own stated running balance out of the SMS, e.g. "Avl Bal: Rs.47,660.00",
+  // "Available balance is INR 46420", "Closing balance Rs 1,32,620.00" — this is ground truth
+  // and avoids delta-drift from missed/duplicate SMS.
+  function parseStatedBalance(text) {
+    if (!text) return null;
+    const m = /(?:avl\.?\s*bal|available\s*bal(?:ance)?|bal(?:ance)?\s*is|clos(?:e|ing)\s*bal(?:ance)?)[:\s]*(?:rs\.?|inr)?\s*\.?\s*([\d,]+\.?\d*)/i.exec(text);
+    return m ? parseFloat(m[1].replace(/,/g, '')) : null;
+  }
+
+  // Finds the single bank account (from saved Bank Accounts) whose account number or linked
+  // mobile appears anywhere in the SMS — used to know which account's balance to update.
+  function findMatchingBankAccount(rawText) {
+    if (!rawText) return null;
+    const bankAccounts = latestAssets.filter(a => a.type === 'bank');
+    if (!bankAccounts.length) return null;
+
+    const amountMatch = /(?:Rs\.?|INR)\s?[\d,]+(?:\.\d{1,2})?/i.exec(rawText);
+    const scanText = amountMatch ? rawText.replace(amountMatch[0], '') : rawText;
+    const accountRefs = extractMaskedAccountRefs(scanText);
+    const mobileRef = extractMaskedMobileRef(scanText);
+
+    for (const acct of bankAccounts) {
+      const fullNumber = acct.accountNumber ? String(acct.accountNumber).replace(/\D/g, '') : '';
+      const mobile = acct.identifier ? String(acct.identifier).replace(/\D/g, '') : '';
+      if (fullNumber && fullNumber.length >= 3 && accountRefs.some(r => r.ref.length >= 3 && fullNumber.endsWith(r.ref))) return acct;
+      if (mobile && mobileRef && mobileRef.ref.length >= 3 && mobile.endsWith(mobileRef.ref)) return acct;
+    }
+    return null;
+  }
+
+  // Updates the matched bank account's balance: uses the SMS's own stated balance if present
+  // (ground truth), otherwise falls back to a simple add/subtract based on credit/debit.
+  async function applyAccountBalanceUpdate(uid, rawText, amount, type) {
+    const acct = findMatchingBankAccount(rawText);
+    if (!acct) return;
+
+    const statedBalance = parseStatedBalance(rawText);
+    let newBalance;
+    if (statedBalance !== null && !isNaN(statedBalance)) {
+      newBalance = statedBalance;
+    } else {
+      const current = acct.balance || 0;
+      newBalance = type === 'credit' ? current + amount : current - amount;
+    }
+
+    await setDoc(doc(db, 'users', uid, 'assets', acct.id), { balance: newBalance }, { merge: true });
+  }
+
   let editingTxnId = null;
 
   document.getElementById('manAddBtn').addEventListener('click', async () => {
@@ -1002,9 +1070,11 @@
     const existing = editingTxnId ? latestTxns.find(x => x.id === editingTxnId) : null;
     const ts = existing ? existing.timestamp : Date.now();
     const txnId = editingTxnId || `manual_${ts}_${amount}`;
+    const isNewTxn = !editingTxnId;
     await setDoc(doc(db, 'users', currentUid, 'transactions', txnId), {
       amount, type, category, accountId: 'manual-entry', counterparty: desc, rawSms: desc, timestamp: ts
     });
+    if (isNewTxn) await applyAccountBalanceUpdate(currentUid, desc, amount, type);
     document.getElementById('manAmount').value = '';
     document.getElementById('manDesc').value = '';
     editingTxnId = null;
