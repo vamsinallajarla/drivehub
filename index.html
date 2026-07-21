@@ -780,38 +780,45 @@
     return '';
   }
 
-  // Pulls out every masked account reference in the text (e.g. "XX8688", "x8050", "Acct XX237")
+  // Pulls out every masked account reference in the text with its position (e.g. "XX8688", "x8050")
   // regardless of how many digits the bank chooses to reveal.
   function extractMaskedAccountRefs(text) {
     if (!text) return [];
     const refs = [];
     const regex = /[Xx*]{1,}(\d{2,6})/g;
     let m;
-    while ((m = regex.exec(text)) !== null) refs.push(m[1]);
+    while ((m = regex.exec(text)) !== null) refs.push({ ref: m[1], index: m.index });
     return refs;
   }
 
   // Pulls out the revealed suffix of a masked mobile number, e.g. "mobile 9XXXXXX951" -> "951",
-  // "mobile x951" -> "951".
+  // "mobile x951" -> "951", with its position.
   function extractMaskedMobileRef(text) {
     if (!text) return null;
     const chunk = /mobile\s+([\dXx]+)/i.exec(text);
     if (!chunk) return null;
     const digitRuns = chunk[1].match(/\d+/g);
-    return digitRuns ? digitRuns[digitRuns.length - 1] : null;
+    if (!digitRuns) return null;
+    return { ref: digitRuns[digitRuns.length - 1], index: chunk.index };
   }
 
   /**
-   * True if this transaction looks like a transfer between the user's OWN
-   * accounts. Two ways to detect it:
-   *  (a) the counterparty/name fragment matches one of the user's own name(s)
-   *      (checked with prefix-tolerance since IMPS refs often truncate names, e.g. "Vams" for "Vamsi")
-   *  (b) the message mentions TWO distinct identifiers (account number or linked
-   *      mobile) that both match the user's saved Bank Accounts — one match alone
-   *      isn't enough, since your own account number appears in every SMS about
-   *      that account regardless of who the counterparty is.
+   * Detects whether this transaction is a transfer between the user's OWN
+   * accounts, and if so, which two accounts and in which direction.
+   * Returns { isTransfer, description }.
+   *
+   *  (a) Name match: counterparty/name fragment matches one of the user's own
+   *      name(s) (prefix-tolerant, since IMPS refs often truncate names, e.g.
+   *      "Vams" for "Vamsi"). Direction isn't derivable this way, so the
+   *      description just says "Self transfer".
+   *  (b) Two-account match: the message mentions TWO distinct identifiers
+   *      (account number or linked mobile) that both match saved Bank
+   *      Accounts — one match alone isn't enough, since your own account
+   *      number legitimately appears in every SMS about that account. When
+   *      both "debited" and "credited" appear, whichever matched account sits
+   *      closer to each keyword determines the from/to direction.
    */
-  function isSelfTransfer(rawText, counterparty) {
+  function detectSelfTransfer(rawText, counterparty) {
     const fragsToCheck = [counterparty].filter(Boolean);
     const nameMatch = selfNames.some(n => {
       if (!n) return false;
@@ -823,38 +830,66 @@
         return upperN.startsWith(upperFrag) || upperFrag.startsWith(upperN) || upperN.includes(upperFrag) || upperFrag.includes(upperN);
       });
     });
-    if (nameMatch) return true;
+    if (nameMatch) return { isTransfer: true, description: 'Self transfer' };
 
     const bankAccounts = latestAssets.filter(a => a.type === 'bank');
-    if (!rawText || bankAccounts.length === 0) return false;
+    if (!rawText || bankAccounts.length === 0) return { isTransfer: false };
 
     // Strip the transaction amount out first so its digits can't accidentally
     // match an account/mobile number ending.
     const amountMatch = /(?:Rs\.?|INR)\s?[\d,]+(?:\.\d{1,2})?/i.exec(rawText);
     const scanText = amountMatch ? rawText.replace(amountMatch[0], '') : rawText;
+    const lowerScan = scanText.toLowerCase();
 
     const maskedAccountRefs = extractMaskedAccountRefs(scanText);
     const mobileRef = extractMaskedMobileRef(scanText);
+    const debitedIdx = lowerScan.indexOf('debited');
+    const creditedIdx = lowerScan.indexOf('credited');
 
-    const matchedAccountIds = new Set();
+    const matches = []; // { name, index }
     for (const acct of bankAccounts) {
       const fullNumber = acct.accountNumber ? String(acct.accountNumber).replace(/\D/g, '') : '';
       const mobile = acct.identifier ? String(acct.identifier).replace(/\D/g, '') : '';
-      const acctId = acct.id || acct.name;
+      const name = acct.name || 'Account';
 
-      if (fullNumber && fullNumber.length >= 3 && maskedAccountRefs.some(ref => ref.length >= 3 && fullNumber.endsWith(ref))) {
-        matchedAccountIds.add(acctId);
+      if (fullNumber && fullNumber.length >= 3) {
+        const hit = maskedAccountRefs.find(r => r.ref.length >= 3 && fullNumber.endsWith(r.ref));
+        if (hit) matches.push({ name, index: hit.index });
       }
-      if (mobile && mobileRef && mobileRef.length >= 3 && mobile.endsWith(mobileRef)) {
-        matchedAccountIds.add(acctId);
+      if (mobile && mobileRef && mobileRef.ref.length >= 3 && mobile.endsWith(mobileRef.ref)) {
+        matches.push({ name, index: mobileRef.index });
       }
     }
 
-    return matchedAccountIds.size >= 2;
+    // De-dupe by account name, keeping the first occurrence.
+    const seen = new Set();
+    const uniqueMatches = matches.filter(m => {
+      if (seen.has(m.name)) return false;
+      seen.add(m.name);
+      return true;
+    });
+
+    if (uniqueMatches.length < 2) return { isTransfer: false };
+
+    // Determine from/to using proximity to "debited"/"credited" if both are present.
+    if (debitedIdx !== -1 && creditedIdx !== -1) {
+      const withRole = uniqueMatches.map(m => ({
+        name: m.name,
+        role: Math.abs(m.index - debitedIdx) < Math.abs(m.index - creditedIdx) ? 'from' : 'to'
+      }));
+      const from = withRole.find(m => m.role === 'from');
+      const to = withRole.find(m => m.role === 'to');
+      if (from && to && from.name !== to.name) {
+        return { isTransfer: true, description: `Self transfer: ${from.name} \u2192 ${to.name}` };
+      }
+    }
+
+    // Fallback: can't determine order, just name both.
+    return { isTransfer: true, description: `Self transfer: ${uniqueMatches[0].name} \u2194 ${uniqueMatches[1].name}` };
   }
 
   function categorize(type, text, counterparty) {
-    if (isSelfTransfer(text, counterparty)) return 'Transfer';
+    if (detectSelfTransfer(text, counterparty).isTransfer) return 'Transfer';
     if (type !== 'credit') return 'Expense';
     const upper = (text || '').toUpperCase();
     return SALARY_KEYWORDS.some((k) => upper.includes(k)) ? 'Income' : 'Transfer';
@@ -951,8 +986,13 @@
     const txns = rawTxnDocs.map(data => {
       const copy = { ...data };
       const counterparty = copy.counterparty || (parseRawSms(copy.rawSms || '') || {}).counterparty || '';
-      copy.category = categorize(copy.type, copy.rawSms || counterparty || '', counterparty);
-      if (!copy.counterparty) copy.counterparty = counterparty;
+      const transferInfo = detectSelfTransfer(copy.rawSms || counterparty || '', counterparty);
+      copy.category = transferInfo.isTransfer
+        ? 'Transfer'
+        : (copy.type === 'credit'
+            ? (SALARY_KEYWORDS.some(k => (copy.rawSms || '').toUpperCase().includes(k)) ? 'Income' : 'Transfer')
+            : 'Expense');
+      copy.counterparty = transferInfo.isTransfer ? transferInfo.description : (counterparty || copy.counterparty);
       return copy;
     });
     renderTransactions(txns.filter(t => t.amount !== undefined && t.type !== undefined));
