@@ -170,13 +170,16 @@
     .ledger-form .row{flex-direction:column;}
     .ledger-form input, .ledger-form select{min-width:0;width:100%;}
     .txn{
-      display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;
+      display:flex;flex-wrap:wrap;align-items:flex-start;gap:4px 10px;
       grid-template-columns:unset;
     }
-    .txn .date{order:0;flex:0 0 auto;font-size:10px;}
-    .txn .desc{order:1;flex:1 1 100%;}
+    .txn .date{order:0;flex:0 0 auto;font-size:10px;max-width:100%;word-break:break-word;}
+    .txn .desc{order:1;flex:1 1 100%;word-break:break-word;}
     .txn .stamp{order:2;}
-    .txn .amt{order:3;margin-left:auto;font-size:13px;}
+    .txn .amt{
+      order:3;flex:1 1 100%;text-align:right;font-size:13px;
+      margin-left:0;word-break:break-word;overflow-wrap:break-word;white-space:normal;
+    }
     .txn-actions{order:4;}
     .ledger-head{padding:14px 16px;}
     .ledger-form{padding:14px 16px;}
