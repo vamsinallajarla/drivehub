@@ -771,6 +771,8 @@
     if (!text) return '';
     const linkedMatch = /linked to mobile\s+[\dXx]+-([A-Za-z ]+)/i.exec(text);
     if (linkedMatch) return linkedMatch[1].trim();
+    const impsMatch = /IMPS\/P2A\/\d+\/([A-Za-z]{3,})/i.exec(text);
+    if (impsMatch) return impsMatch[1].trim();
     const toMatch = /\bto\s+([A-Z][A-Za-z0-9 .&\-]{2,30})/.exec(text);
     if (toMatch) return toMatch[1].trim();
     const fromMatch = /\bfrom\s+([A-Z][A-Za-z0-9 .&\-]{2,30})/.exec(text);
@@ -778,29 +780,77 @@
     return '';
   }
 
+  // Pulls out every masked account reference in the text (e.g. "XX8688", "x8050", "Acct XX237")
+  // regardless of how many digits the bank chooses to reveal.
+  function extractMaskedAccountRefs(text) {
+    if (!text) return [];
+    const refs = [];
+    const regex = /[Xx*]{1,}(\d{2,6})/g;
+    let m;
+    while ((m = regex.exec(text)) !== null) refs.push(m[1]);
+    return refs;
+  }
+
+  // Pulls out the revealed suffix of a masked mobile number, e.g. "mobile 9XXXXXX951" -> "951",
+  // "mobile x951" -> "951".
+  function extractMaskedMobileRef(text) {
+    if (!text) return null;
+    const chunk = /mobile\s+([\dXx]+)/i.exec(text);
+    if (!chunk) return null;
+    const digitRuns = chunk[1].match(/\d+/g);
+    return digitRuns ? digitRuns[digitRuns.length - 1] : null;
+  }
+
   /**
    * True if this transaction looks like a transfer between the user's OWN
-   * accounts, based on either:
-   *  (a) the counterparty name matching one of the user's own name(s), or
-   *  (b) an account number in the SMS matching one of the user's saved bank accounts.
+   * accounts. Two ways to detect it:
+   *  (a) the counterparty/name fragment matches one of the user's own name(s)
+   *      (checked with prefix-tolerance since IMPS refs often truncate names, e.g. "Vams" for "Vamsi")
+   *  (b) the message mentions TWO distinct identifiers (account number or linked
+   *      mobile) that both match the user's saved Bank Accounts — one match alone
+   *      isn't enough, since your own account number appears in every SMS about
+   *      that account regardless of who the counterparty is.
    */
   function isSelfTransfer(rawText, counterparty) {
-    const upperCounterparty = (counterparty || '').toUpperCase();
-    if (selfNames.some(n => n && upperCounterparty.includes(n.toUpperCase()))) return true;
+    const fragsToCheck = [counterparty].filter(Boolean);
+    const nameMatch = selfNames.some(n => {
+      if (!n) return false;
+      const upperN = n.trim().toUpperCase();
+      if (upperN.length < 3) return false;
+      return fragsToCheck.some(frag => {
+        const upperFrag = frag.toUpperCase();
+        if (upperFrag.length < 3) return false;
+        return upperN.startsWith(upperFrag) || upperFrag.startsWith(upperN) || upperN.includes(upperFrag) || upperFrag.includes(upperN);
+      });
+    });
+    if (nameMatch) return true;
 
-    const ownAccountNumbers = latestAssets
-      .filter(a => a.type === 'bank' && a.accountNumber)
-      .map(a => String(a.accountNumber).replace(/\D/g, ''))
-      .filter(n => n.length >= 4);
-    if (ownAccountNumbers.length && rawText) {
-      const digitsInText = rawText.replace(/\D/g, ' ').split(/\s+/).filter(Boolean);
-      // Also check masked forms like XX8685 by matching the trailing digits directly in the raw string
-      for (const acct of ownAccountNumbers) {
-        const last4 = acct.slice(-4);
-        if (rawText.includes(acct) || (last4.length === 4 && rawText.includes(last4))) return true;
+    const bankAccounts = latestAssets.filter(a => a.type === 'bank');
+    if (!rawText || bankAccounts.length === 0) return false;
+
+    // Strip the transaction amount out first so its digits can't accidentally
+    // match an account/mobile number ending.
+    const amountMatch = /(?:Rs\.?|INR)\s?[\d,]+(?:\.\d{1,2})?/i.exec(rawText);
+    const scanText = amountMatch ? rawText.replace(amountMatch[0], '') : rawText;
+
+    const maskedAccountRefs = extractMaskedAccountRefs(scanText);
+    const mobileRef = extractMaskedMobileRef(scanText);
+
+    const matchedAccountIds = new Set();
+    for (const acct of bankAccounts) {
+      const fullNumber = acct.accountNumber ? String(acct.accountNumber).replace(/\D/g, '') : '';
+      const mobile = acct.identifier ? String(acct.identifier).replace(/\D/g, '') : '';
+      const acctId = acct.id || acct.name;
+
+      if (fullNumber && fullNumber.length >= 3 && maskedAccountRefs.some(ref => ref.length >= 3 && fullNumber.endsWith(ref))) {
+        matchedAccountIds.add(acctId);
+      }
+      if (mobile && mobileRef && mobileRef.length >= 3 && mobile.endsWith(mobileRef)) {
+        matchedAccountIds.add(acctId);
       }
     }
-    return false;
+
+    return matchedAccountIds.size >= 2;
   }
 
   function categorize(type, text, counterparty) {
@@ -824,8 +874,8 @@
     const amount = parseFloat(amountMatch[1].replace(/,/g, ''));
     const amountIdx = amountMatch.index;
 
-    const creditWords = ['credited', 'received', 'deposited'];
-    const debitWords = ['debited', 'sent', 'spent', 'withdrawn', 'paid'];
+    const creditWords = ['credited', 'received', 'deposited', 'credit'];
+    const debitWords = ['debited', 'sent', 'spent', 'withdrawn', 'paid', 'debit'];
     const lower = text.toLowerCase();
 
     let bestType = null, bestDist = Infinity;
