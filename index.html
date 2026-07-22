@@ -594,6 +594,16 @@
             <button id="pullInboxBtn">Pull &amp; import new SMS</button>
             <span id="inboxStatus" style="font-size:12px;color:var(--muted);align-self:center;"></span>
           </div>
+          <div class="row" style="margin-top:10px;">
+            <button class="ghost" id="cleanupInboxBtn">Clean up processed SMS inbox</button>
+            <span id="cleanupStatus" style="font-size:12px;color:var(--muted);align-self:center;"></span>
+          </div>
+          <div class="footnote" style="margin-top:10px;margin-bottom:0;">
+            You're running multiple keyword-based automations (credited/debited/received/sent etc.) so the same
+            bank SMS often gets posted here more than once — that's fine, duplicates are auto-skipped when
+            importing. This button just deletes the already-processed inbox documents afterwards, since they're
+            no longer needed and would otherwise pile up indefinitely.
+          </div>
           <div class="footnote" style="margin-top:16px;">
             <b>New Shortcut — one action, that's it:</b><br>
             "Get Contents of URL" → POST →<br>
@@ -688,7 +698,7 @@
     linkWithCredential, EmailAuthProvider
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import {
-    getFirestore, collection, onSnapshot, query, orderBy, limit, where, doc, setDoc, deleteDoc, getDoc, getDocs
+    getFirestore, collection, onSnapshot, query, orderBy, limit, where, doc, setDoc, deleteDoc, getDoc, getDocs, writeBatch
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   function randomKey(len = 32) {
@@ -830,6 +840,22 @@
       const snap = await getDocs(collection(db, 'sms_inbox'));
       const imported = await importInboxDocs(snap.docs);
       statusEl.textContent = imported ? `Imported ${imported} new transaction${imported === 1 ? '' : 's'}.` : 'No new messages.';
+    } catch (e) {
+      statusEl.textContent = 'Error: ' + e.message;
+    }
+  });
+
+  document.getElementById('cleanupInboxBtn').addEventListener('click', async () => {
+    const statusEl = document.getElementById('cleanupStatus');
+    statusEl.textContent = 'Cleaning up…';
+    try {
+      const q = query(collection(db, 'sms_inbox'), where('processed', '==', true));
+      const snap = await getDocs(q);
+      if (snap.empty) { statusEl.textContent = 'Nothing to clean up.'; return; }
+      const batch = writeBatch(db);
+      snap.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      statusEl.textContent = `Deleted ${snap.size} processed SMS inbox document${snap.size === 1 ? '' : 's'}.`;
     } catch (e) {
       statusEl.textContent = 'Error: ' + e.message;
     }
