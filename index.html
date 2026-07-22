@@ -169,18 +169,20 @@
     .chart-grid{grid-template-columns:1fr;}
     .ledger-form .row{flex-direction:column;}
     .ledger-form input, .ledger-form select{min-width:0;width:100%;}
-    .txn{
-      display:flex;flex-wrap:wrap;align-items:flex-start;gap:4px 10px;
-      grid-template-columns:unset;
-    }
-    .txn .date{order:0;flex:0 0 auto;font-size:10px;max-width:100%;overflow-wrap:anywhere;min-width:0;}
-    .txn .desc{order:1;flex:1 1 100%;min-width:0;overflow-wrap:anywhere;}
-    .txn .stamp{order:2;}
-    .txn .amt{
-      order:3;flex:1 1 100%;text-align:right;font-size:13px;
-      margin-left:0;min-width:0;overflow-wrap:anywhere;white-space:normal;
-    }
-    .txn-actions{order:4;}
+.txn{
+  display:grid;
+  grid-template-columns:1fr auto;
+  grid-template-areas:
+    "date stamp"
+    "desc desc"
+    "amt actions";
+  gap:4px 10px;align-items:center;
+}
+.txn .date{grid-area:date;font-size:10px;}
+.txn .stamp{grid-area:stamp;justify-self:end;}
+.txn .desc{grid-area:desc;width:100%;font-size:13.5px;word-break:break-word;overflow-wrap:break-word;}
+.txn .amt{grid-area:amt;font-size:13px;text-align:left;white-space:normal;word-break:break-word;}
+.txn-actions{grid-area:actions;justify-self:end;}
     .ledger-head{padding:14px 16px;}
     .ledger-form{padding:14px 16px;}
     canvas{max-width:100%;}
