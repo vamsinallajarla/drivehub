@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Passbook — Financial Ledger</title>
+<title>Financial Ledger</title>
 <link rel="icon" type="image/png" href="./logo.png">
 <link rel="apple-touch-icon" href="./logo.png">
 <link rel="manifest" href="./manifest.json">
@@ -395,11 +395,11 @@
   <div class="signin-card">
     <div class="mark"><img src="./logo.png" alt="" style="width:28px;height:28px;filter:invert(1);" /></div>
     <div class="eyebrow">Bank Sync · Passbook</div>
-    <h1>Your Ledger</h1>
+    <h1>Ledger</h1>
     <div class="sub">Every account, every transaction — one place.</div>
     <button id="googleBtn" class="google-btn">
       <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.4 5.1 29.5 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.5 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.4 5.1 29.5 3 24 3 16.3 3 9.7 7.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 36.2 26.7 37 24 37c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 40.6 16.2 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.1 5.6l6.2 5.2C40.9 36.3 45 30.8 45 24c0-1.4-.1-2.7-.4-3.5z"/></svg>
-      Continue with Google
+      Signin
     </button>
   </div>
 </div>
@@ -894,7 +894,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
-    getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
+    getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged,
     linkWithCredential, EmailAuthProvider
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import {
@@ -1126,9 +1126,15 @@
 
   document.getElementById('googleBtn').addEventListener('click', async () => {
     try {
-      await signInWithPopup(auth, new GoogleAuthProvider());
-      // onAuthSuccess fires via onAuthStateChanged below
+      await signInWithRedirect(auth, new GoogleAuthProvider());
+      // Page navigates away and back; onAuthSuccess fires via onAuthStateChanged below once it returns.
     } catch (e) { alert('Google sign-in failed: ' + e.message); }
+  });
+
+  // Surface any error from completing the redirect (e.g. unauthorized domain, blocked by browser).
+  getRedirectResult(auth).catch((e) => {
+    console.error('Google redirect sign-in error:', e);
+    alert('Google sign-in failed: ' + e.message);
   });
 
   // ---- Persist session across page reloads ----
