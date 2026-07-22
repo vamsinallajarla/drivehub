@@ -801,15 +801,26 @@
       if (parsed) {
         const ts = Date.now();
         const txnId = `inbox_${d.id}`;
+        const transferInfo = detectSelfTransfer(rawSms, parsed.counterparty || '');
         await setDoc(doc(db, 'users', currentUid, 'transactions', txnId), {
           amount: parsed.amount,
           type: parsed.type,
           rawSms,
           counterparty: parsed.counterparty || '',
           accountId: 'sms-inbox',
-          timestamp: ts
+          timestamp: ts,
+          fromAccountId: transferInfo.fromAccountId || null,
+          toAccountId: transferInfo.toAccountId || null
         });
-        await applyAccountBalanceUpdate(currentUid, rawSms, parsed.amount, parsed.type);
+        if (transferInfo.isTransfer && transferInfo.fromAccountId && transferInfo.toAccountId) {
+          // Single SMS mentions both ends of the transfer — apply both sides directly
+          // instead of relying on the single-account matcher, which can only ever
+          // update one account and would otherwise silently miss this case.
+          await applyAccountBalanceUpdate(currentUid, '', parsed.amount, 'debit', transferInfo.fromAccountId);
+          await applyAccountBalanceUpdate(currentUid, '', parsed.amount, 'credit', transferInfo.toAccountId);
+        } else {
+          await applyAccountBalanceUpdate(currentUid, rawSms, parsed.amount, parsed.type);
+        }
         imported++;
         // Guard against duplicates within the same batch too.
         rawTxnDocs.push({ id: txnId, amount: parsed.amount, type: parsed.type, rawSms, timestamp: ts });
@@ -1011,7 +1022,7 @@
    *      closer to each keyword determines the from/to direction.
    */
   function detectSelfTransfer(rawText, counterparty) {
-    const fragsToCheck = [counterparty].filter(Boolean);
+    const fragsToCheck = [counterparty, rawText].filter(Boolean);
     const nameMatch = selfNames.some(n => {
       if (!n) return false;
       const upperN = n.trim().toUpperCase();
@@ -1038,7 +1049,7 @@
     const debitedIdx = lowerScan.indexOf('debited');
     const creditedIdx = lowerScan.indexOf('credited');
 
-    const matches = []; // { name, index }
+    const matches = []; // { name, id, index }
     for (const acct of bankAccounts) {
       const fullNumber = acct.accountNumber ? String(acct.accountNumber).replace(/\D/g, '') : '';
       const mobile = acct.identifier ? String(acct.identifier).replace(/\D/g, '') : '';
@@ -1046,18 +1057,18 @@
 
       if (fullNumber && fullNumber.length >= 3) {
         const hit = maskedAccountRefs.find(r => r.ref.length >= 3 && fullNumber.endsWith(r.ref));
-        if (hit) matches.push({ name, index: hit.index });
+        if (hit) matches.push({ name, id: acct.id, index: hit.index });
       }
       if (mobile && mobileRef && mobileRef.ref.length >= 3 && mobile.endsWith(mobileRef.ref)) {
-        matches.push({ name, index: mobileRef.index });
+        matches.push({ name, id: acct.id, index: mobileRef.index });
       }
     }
 
-    // De-dupe by account name, keeping the first occurrence.
+    // De-dupe by account id, keeping the first occurrence.
     const seen = new Set();
     const uniqueMatches = matches.filter(m => {
-      if (seen.has(m.name)) return false;
-      seen.add(m.name);
+      if (seen.has(m.id)) return false;
+      seen.add(m.id);
       return true;
     });
 
@@ -1067,16 +1078,23 @@
     if (debitedIdx !== -1 && creditedIdx !== -1) {
       const withRole = uniqueMatches.map(m => ({
         name: m.name,
+        id: m.id,
         role: Math.abs(m.index - debitedIdx) < Math.abs(m.index - creditedIdx) ? 'from' : 'to'
       }));
       const from = withRole.find(m => m.role === 'from');
       const to = withRole.find(m => m.role === 'to');
-      if (from && to && from.name !== to.name) {
-        return { isTransfer: true, description: `Self transfer: ${from.name} \u2192 ${to.name}` };
+      if (from && to && from.id !== to.id) {
+        return {
+          isTransfer: true,
+          description: `Self transfer: ${from.name} \u2192 ${to.name}`,
+          fromAccountId: from.id,
+          toAccountId: to.id
+        };
       }
     }
 
-    // Fallback: can't determine order, just name both.
+    // Fallback: can't determine order, just name both — no confident from/to split,
+    // so balance updates fall back to the single-account matcher for this case.
     return { isTransfer: true, description: `Self transfer: ${uniqueMatches[0].name} \u2194 ${uniqueMatches[1].name}` };
   }
 
@@ -1269,9 +1287,9 @@
   // update used the bank's stated balance — since there's no way to reconstruct the exact
   // prior stated balance after the fact; this is the closest correct approximation.
   async function reverseAccountBalanceUpdate(uid, txn) {
-    if (txn.isManualTransfer) {
-      if (txn.fromAccountId) await applyAccountBalanceUpdate(uid, '', txn.amount, 'credit', txn.fromAccountId);
-      if (txn.toAccountId) await applyAccountBalanceUpdate(uid, '', txn.amount, 'debit', txn.toAccountId);
+    if (txn.fromAccountId && txn.toAccountId) {
+      await applyAccountBalanceUpdate(uid, '', txn.amount, 'credit', txn.fromAccountId); // undo debit
+      await applyAccountBalanceUpdate(uid, '', txn.amount, 'debit', txn.toAccountId);   // undo credit
       return;
     }
     const linkedId = txn.fromAccountId || (txn.accountId && txn.accountId !== 'manual-entry' && txn.accountId !== 'sms-inbox' ? txn.accountId : null);
@@ -1286,6 +1304,31 @@
   document.getElementById('txnList').addEventListener('click', async (e) => {
     const editBtn = e.target.closest('.edit-txn');
     const delBtn = e.target.closest('.delete-txn');
+    const reapplyBtn = e.target.closest('.reapply-txn');
+    if (reapplyBtn) {
+      const t = latestTxns.find(x => x.id === reapplyBtn.dataset.id);
+      if (!t) return;
+      if (!confirm('Re-apply this transaction\'s effect to its linked account balance? Only do this if you\'re sure it was never applied (e.g. it happened before the account was linked) — running it twice will double-count.')) return;
+
+      if (t.fromAccountId && t.toAccountId) {
+        await applyAccountBalanceUpdate(currentUid, '', t.amount, 'debit', t.fromAccountId);
+        await applyAccountBalanceUpdate(currentUid, '', t.amount, 'credit', t.toAccountId);
+      } else {
+        const transferInfo = detectSelfTransfer(t.rawSms || t.counterparty || '', t.counterparty || '');
+        if (transferInfo.isTransfer && transferInfo.fromAccountId && transferInfo.toAccountId) {
+          await applyAccountBalanceUpdate(currentUid, '', t.amount, 'debit', transferInfo.fromAccountId);
+          await applyAccountBalanceUpdate(currentUid, '', t.amount, 'credit', transferInfo.toAccountId);
+        } else {
+          const linkedId = t.accountId && t.accountId !== 'manual-entry' && t.accountId !== 'sms-inbox' ? t.accountId : null;
+          if (linkedId) {
+            await applyAccountBalanceUpdate(currentUid, t.rawSms || '', t.amount, t.type, linkedId);
+          } else {
+            await applyAccountBalanceUpdate(currentUid, t.rawSms || '', t.amount, t.type);
+          }
+        }
+      }
+      return;
+    }
     if (editBtn) {
       const t = latestTxns.find(x => x.id === editBtn.dataset.id);
       if (!t) return;
@@ -1391,6 +1434,7 @@
             <div class="amt ${isCredit ? 'credit' : 'debit'}">${isCredit ? '+' : '−'}${inr(t.amount)}</div>
             <div class="txn-actions">
               <button class="icon-btn edit-btn edit-txn" data-id="${t.id}">✎</button>
+              <button class="icon-btn reapply-txn" data-id="${t.id}" title="Re-apply to balance">↻</button>
               <button class="icon-btn delete-btn delete-txn" data-id="${t.id}">✕</button>
             </div>
           </div>`;
