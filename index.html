@@ -25,8 +25,8 @@
     --debit:#DC2626;
     --gold:#D97706;
     --muted:#697485;
-    --glass-card:var(--paper-raised);
-    --glass-border:var(--rule);
+    --glass-card:rgba(255,255,255,0.62);
+    --glass-border:rgba(230,234,243,0.8);
     --glass-text:var(--ink);
     --primary:#3B82F6;
     --primary-soft:rgba(59,130,246,0.12);
@@ -44,8 +44,8 @@
     --debit:#F87171;
     --gold:#FBBF24;
     --muted:#8993A8;
-    --glass-card:var(--paper-raised);
-    --glass-border:var(--rule);
+    --glass-card:rgba(30,38,54,0.55);
+    --glass-border:rgba(145,170,255,0.14);
     --glass-text:var(--ink);
     --primary:#5B9DF9;
     --primary-soft:rgba(91,157,249,0.16);
@@ -65,8 +65,8 @@
     --debit:#4D4D4D;
     --gold:#7A7A7A;
     --muted:#767676;
-    --glass-card:var(--paper-raised);
-    --glass-border:var(--rule);
+    --glass-card:rgba(255,255,255,0.75);
+    --glass-border:rgba(0,0,0,0.14);
     --glass-text:var(--ink);
     --primary:#000000;
     --primary-soft:rgba(0,0,0,0.08);
@@ -303,17 +303,24 @@
   }
   .sum-card{
     background:var(--glass-card);
+    backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);
     border:1px solid var(--glass-border);border-radius:16px;padding:18px 20px;position:relative;color:var(--glass-text);
     overflow:hidden;transition:box-shadow .2s, transform .2s;
-    box-shadow:var(--shadow-card);
+    box-shadow:var(--shadow-card), inset 0 1px 0 rgba(255,255,255,0.08);
     --badge:var(--primary);
   }
-  .sum-card:hover{box-shadow:var(--shadow-card-hover);transform:translateY(-3px);}
+  .sum-card:hover{box-shadow:var(--shadow-card-hover), inset 0 1px 0 rgba(255,255,255,0.1);transform:translateY(-3px);}
+  .sum-card::before{
+    content:"";position:absolute;inset:0;pointer-events:none;border-radius:16px;
+    background:radial-gradient(circle at 85% -10%, color-mix(in srgb, var(--badge) 20%, transparent) 0%, transparent 55%);
+  }
   .sum-card::after{
     content:"";position:absolute;top:16px;right:16px;width:34px;height:34px;border-radius:10px;
-    background:color-mix(in srgb, var(--badge) 16%, transparent);
-    box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--badge) 30%, transparent);
+    background:color-mix(in srgb, var(--badge) 20%, transparent);
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--badge) 35%, transparent), inset 0 1px 0 rgba(255,255,255,0.15);
   }
+  .card-icon{position:absolute;top:23px;right:23px;width:20px;height:20px;color:var(--badge);z-index:2;pointer-events:none;}
   .summary .sum-card:nth-child(6n+1){--badge:#3B82F6;}
   .summary .sum-card:nth-child(6n+2){--badge:#F59E0B;}
   .summary .sum-card:nth-child(6n+3){--badge:#8B5CF6;}
@@ -332,14 +339,16 @@
   .expense .bar > div{background:var(--debit);}
 
   .hero-card{display:flex;flex-direction:column;}
-  .hero-card::after{display:none;}
+  .hero-card::after, .hero-card::before{display:none;}
   .hero-card.income{--badge:var(--credit);}
   .hero-card.expense{--badge:var(--debit);}
   .hero-card.transfer{--badge:var(--gold);}
   .hero-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;position:relative;z-index:1;}
   .hero-icon{
     width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;
-    background:color-mix(in srgb, var(--badge) 16%, transparent);color:var(--badge);
+    background:color-mix(in srgb, var(--badge) 18%, transparent);color:var(--badge);
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--badge) 35%, transparent), inset 0 1px 0 rgba(255,255,255,0.15);
     font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;flex-shrink:0;
   }
   .hero-chip{
@@ -351,8 +360,9 @@
 
   .ledger{
     background:var(--glass-card);
+    backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);
     border:1px solid var(--glass-border);border-radius:16px;overflow:hidden;margin-bottom:20px;color:var(--glass-text);
-    box-shadow:var(--shadow-card);
+    box-shadow:var(--shadow-card), inset 0 1px 0 rgba(255,255,255,0.06);
   }
   .ledger-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--rule);}
   .ledger-head h3{font-family:'Space Grotesk',sans-serif;margin:0;font-size:18px;}
@@ -539,22 +549,27 @@
       </div>
       <div class="summary">
         <div class="sum-card income">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6"/><path d="M4 10v9h16v-9"/><line x1="9" y1="14" x2="9" y2="19"/><line x1="15" y1="14" x2="15" y2="19"/></svg>
           <div class="label">Bank Balance</div>
           <div class="amt" id="bankBalanceTotal">₹0</div>
         </div>
         <div class="sum-card income">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="14 6 21 6 21 13"/></svg>
           <div class="label">Assets (Bank + Investments)</div>
           <div class="amt" id="assetsTotal">₹0</div>
         </div>
         <div class="sum-card expense">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
           <div class="label">Liabilities (Cards + Loans)</div>
           <div class="amt" id="liabilitiesTotal">₹0</div>
         </div>
         <div class="sum-card transfer">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
           <div class="label">Net Worth</div>
           <div class="amt" id="netWorthTotal">₹0</div>
         </div>
         <div class="sum-card expense">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           <div class="label">Monthly EMI Commitment</div>
           <div class="amt" id="emiTotal">₹0</div>
         </div>
@@ -562,22 +577,27 @@
 
       <div class="summary">
         <div class="sum-card transfer">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5c-1.5-1.5-3.5-2-5.5-2C9 3 5 6.5 5 11.5S9 20 13.5 20c2 0 4-.5 5.5-2"/><path d="M2 11.5h9M2 15h6"/></svg>
           <div class="label">Savings Rate</div>
           <div class="amt" id="savingsRate">0%</div>
         </div>
         <div class="sum-card expense">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
           <div class="label">Credit Utilization</div>
           <div class="amt" id="creditUtil">0%</div>
         </div>
         <div class="sum-card expense">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M3 8h18M5 8l1.5 11a2 2 0 002 2h7a2 2 0 002-2L19 8"/><path d="M9 12v5M15 12v5"/></svg>
           <div class="label">Debt-to-Asset Ratio</div>
           <div class="amt" id="debtRatio">0%</div>
         </div>
         <div class="sum-card expense">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><polyline points="12 9 12 13 15 15"/><path d="M9 3h6M19 5l1.5-1.5M3.5 3.5L5 5"/></svg>
           <div class="label">Next EMI Due</div>
           <div class="amt" id="nextEmiDue">—</div>
         </div>
         <div class="sum-card expense">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
           <div class="label">Emergency Fund Target (3 mo)</div>
           <div class="amt" id="emergencyFundTotal">₹0</div>
         </div>
@@ -755,18 +775,22 @@
       <h2 id="monthReviewTitle">Month Review</h2>
       <div class="summary">
         <div class="sum-card income">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
           <div class="label">Income this month</div>
           <div class="amt" id="mrIncome">₹0</div>
         </div>
         <div class="sum-card transfer">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
           <div class="label">Transfer this month</div>
           <div class="amt" id="mrTransfer">₹0</div>
         </div>
         <div class="sum-card expense">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
           <div class="label">Expense this month</div>
           <div class="amt" id="mrExpense">₹0</div>
         </div>
         <div class="sum-card transfer">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="14 6 21 6 21 13"/></svg>
           <div class="label">Net Cash Flow</div>
           <div class="amt" id="mrNetFlow">₹0</div>
         </div>
