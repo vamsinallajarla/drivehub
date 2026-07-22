@@ -922,6 +922,9 @@
 
   const statusBadge = document.getElementById('statusBadge');
   let currentUid = null;
+  let latestTxns = [];
+  let latestAssets = [];
+  let cashFlowChartInst, netWorthChartInst, creditUtilChartInst, monthCashFlowChartInst, categoryChartInst;
 
   // ---- Theme toggle (Light / Dark / Black & White) ----
   const THEME_ORDER = ['light', 'dark', 'bw'];
@@ -1668,8 +1671,6 @@
     });
   }
 
-  let latestTxns = [];
-
   function getSearchFiltered(txns) {
     const term = (document.getElementById('topbarSearch')?.value || '').trim().toLowerCase();
     if (!term) return txns;
@@ -1733,8 +1734,6 @@
     updateMonthReview();
     updateCharts();
   }
-
-  let latestAssets = [];
 
   let editingAssetId = { bank: null, investment: null, credit_card: null, loan: null };
 
@@ -1930,8 +1929,6 @@
   }
 
   // ---- Charts ----
-  let cashFlowChartInst, netWorthChartInst, creditUtilChartInst, monthCashFlowChartInst, categoryChartInst;
-
   function updateMonthReview() {
     const now = new Date();
     const y = now.getFullYear(), m = now.getMonth();
