@@ -210,6 +210,19 @@
   .topbar-search svg{width:16px;height:16px;flex-shrink:0;}
   .topbar-search input{border:none;background:none;padding:0;font-family:'Inter',sans-serif;font-size:13.5px;min-width:0;flex:1;color:var(--ink);}
   .topbar-search input:focus{box-shadow:none;}
+  .topbar-month{
+    display:flex;align-items:center;gap:8px;flex-shrink:0;
+    background:var(--paper-raised);border:1px solid var(--rule);border-radius:10px;
+    padding:7px 10px;box-shadow:var(--shadow-card);color:var(--muted);
+  }
+  .topbar-month svg{width:16px;height:16px;flex-shrink:0;}
+  .topbar-month input[type="month"]{
+    border:none;background:none;padding:0;font-family:'JetBrains Mono',monospace;font-size:12.5px;
+    min-width:0;color:var(--ink);flex:1;
+  }
+  .topbar-month input[type="month"]:focus{box-shadow:none;}
+  #allTimeBtn{padding:4px 10px;font-size:11px;box-shadow:none;}
+  #allTimeBtn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
   .topbar-actions{display:flex;align-items:center;gap:12px;flex-shrink:0;}
   .icon-chip{
     width:38px;height:38px;padding:0;border-radius:10px;
@@ -246,6 +259,7 @@
   @media (max-width:640px){
     .topbar{flex-wrap:wrap;}
     .topbar-search{order:2;max-width:100%;flex:1 1 100%;}
+    .topbar-month{order:3;flex:1 1 100%;}
     #topbarEmail{display:none;}
   }
   .page{display:none;}
@@ -490,6 +504,11 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" placeholder="Search transactions…" id="topbarSearch" />
       </div>
+      <div class="topbar-month">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <input type="month" id="globalMonthPicker" />
+        <button class="ghost" id="allTimeBtn" title="Show all-time totals instead of one month">All time</button>
+      </div>
       <div class="topbar-actions">
         <button id="themeToggleBtn" class="icon-chip" title="Toggle theme (Light / Dark / Black &amp; White)" aria-label="Toggle theme">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><g id="themeToggleIcon"><circle cx="12" cy="12" r="4.5"/><line x1="12" y1="1.5" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22.5"/><line x1="4.2" y1="4.2" x2="6" y2="6"/><line x1="18" y1="18" x2="19.8" y2="19.8"/><line x1="1.5" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.5" y2="12"/><line x1="4.2" y1="19.8" x2="6" y2="18"/><line x1="18" y1="6" x2="19.8" y2="4.2"/></g></svg>
@@ -677,6 +696,17 @@
             <button id="manAddBtn">Add transaction</button>
             <button class="ghost" id="manCancelBtn" style="display:none;">Cancel edit</button>
           </div>
+        </div>
+      </div>
+      <div class="ledger">
+        <div class="ledger-head"><h3>Filter Ledger</h3></div>
+        <div class="ledger-form">
+          <div class="row">
+            <select id="ledgerCategoryFilter">
+              <option value="">All categories</option>
+            </select>
+          </div>
+          <div class="footnote" id="categorySpendSummary" style="margin-top:12px;margin-bottom:0;"></div>
         </div>
       </div>
       <div class="ledger">
@@ -994,6 +1024,7 @@
   let cashFlowChartInst, netWorthChartInst, creditUtilChartInst, monthCashFlowChartInst, categoryChartInst;
   let currentBankSum = 0;
   let currentSurplus = 0;
+  let selectedMonthKey = null; // null = "All time"; otherwise 'YYYY-MM'
 
   // ---- Theme toggle (Light / Dark / Black & White) ----
   const THEME_ORDER = ['light', 'dark', 'bw'];
@@ -1043,6 +1074,46 @@
     renderTransactions(latestTxns);
   });
 
+  // ---- Global month filter (drives Overview flow totals, charts, the Ledger, and Month Review) ----
+  function currentMonthKey() {
+    const now = new Date();
+    return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  }
+  const globalMonthPicker = document.getElementById('globalMonthPicker');
+  const allTimeBtn = document.getElementById('allTimeBtn');
+  selectedMonthKey = currentMonthKey();
+  globalMonthPicker.value = selectedMonthKey;
+
+  function refreshAllPages() {
+    recomputeAndRenderTransactions();
+    updateMonthReview();
+  }
+
+  globalMonthPicker.addEventListener('change', () => {
+    selectedMonthKey = globalMonthPicker.value || currentMonthKey();
+    allTimeBtn.classList.remove('active');
+    globalMonthPicker.disabled = false;
+    refreshAllPages();
+  });
+
+  allTimeBtn.addEventListener('click', () => {
+    const goingAllTime = !allTimeBtn.classList.contains('active');
+    if (goingAllTime) {
+      selectedMonthKey = null;
+      allTimeBtn.classList.add('active');
+      globalMonthPicker.disabled = true;
+    } else {
+      selectedMonthKey = globalMonthPicker.value || currentMonthKey();
+      allTimeBtn.classList.remove('active');
+      globalMonthPicker.disabled = false;
+    }
+    refreshAllPages();
+  });
+
+  document.getElementById('ledgerCategoryFilter').addEventListener('change', () => {
+    renderTransactions(latestTxns);
+  });
+
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
@@ -1078,6 +1149,7 @@
     document.getElementById('selfNamesInput').value = savedNames.join(', ');
     customCategories = userSnap.exists() ? (userSnap.data().customCategories || []) : [];
     refreshCategoryOptions();
+    refreshLedgerCategoryFilterOptions();
   }
 
   async function importInboxDocs(docs) {
@@ -1593,6 +1665,7 @@
       if (currentUid) await setDoc(doc(db, 'users', currentUid), { customCategories }, { merge: true });
     }
     refreshCategoryOptions();
+    refreshLedgerCategoryFilterOptions();
     document.getElementById('manCategory').value = trimmed;
   });
 
@@ -1845,6 +1918,27 @@
     );
   }
 
+  // Filters to only transactions within the globally selected month (selectedMonthKey),
+  // or returns everything unchanged when "All time" is active (selectedMonthKey === null).
+  function getMonthFiltered(txns) {
+    if (!selectedMonthKey) return txns;
+    return txns.filter(t => {
+      if (!t.timestamp) return false;
+      const d = new Date(t.timestamp);
+      const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      return key === selectedMonthKey;
+    });
+  }
+
+  function refreshLedgerCategoryFilterOptions() {
+    const sel = document.getElementById('ledgerCategoryFilter');
+    if (!sel) return;
+    const current = sel.value;
+    const allCats = [...BUILTIN_CATEGORIES, ...customCategories.filter(c => !BUILTIN_CATEGORIES.includes(c))];
+    sel.innerHTML = '<option value="">All categories</option>' + allCats.map(c => `<option value="${c}">${c}</option>`).join('');
+    sel.value = allCats.includes(current) ? current : '';
+  }
+
   // Determines whether a transaction was typed in manually vs. synced from an SMS.
   // Prefers the explicit `source` field; falls back to the id prefix for older
   // transactions recorded before that field existed.
@@ -1865,9 +1959,29 @@
   function renderTransactions(txns) {
     latestTxns = txns;
     const listEl = document.getElementById('txnList');
-    const displayTxns = getSearchFiltered(txns);
+    const monthTxns = getMonthFiltered(txns);
+
+    const categoryFilterVal = document.getElementById('ledgerCategoryFilter')?.value || '';
+    let displayTxns = getSearchFiltered(monthTxns);
+    if (categoryFilterVal) {
+      displayTxns = displayTxns.filter(t => (t.spendCategory || 'Other') === categoryFilterVal);
+    }
+
     document.getElementById('txnCount').textContent =
-      displayTxns.length + (displayTxns.length !== txns.length ? ` of ${txns.length}` : '') + ' entries';
+      displayTxns.length + (displayTxns.length !== monthTxns.length ? ` of ${monthTxns.length}` : '') + ' entries';
+
+    // Category spend summary — total spent in the selected category, within the current
+    // month scope, independent of the free-text search.
+    const summaryEl = document.getElementById('categorySpendSummary');
+    if (summaryEl) {
+      if (categoryFilterVal) {
+        const catTxns = monthTxns.filter(t => (t.spendCategory || 'Other') === categoryFilterVal && t.type === 'debit' && t.category !== 'Transfer');
+        const catTotal = catTxns.reduce((s, t) => s + t.amount, 0);
+        summaryEl.innerHTML = `Total spent on <b>${categoryFilterVal}</b>${selectedMonthKey ? ' this month' : ' (all time)'}: <b style="color:var(--debit)">${inr(catTotal)}</b> across ${catTxns.length} transaction${catTxns.length === 1 ? '' : 's'}`;
+      } else {
+        summaryEl.innerHTML = '';
+      }
+    }
 
     if (displayTxns.length === 0) {
       listEl.innerHTML = `<div class="empty"><div class="big">No entries yet</div>Waiting for the first synced SMS or manual entry.</div>`;
@@ -1891,10 +2005,11 @@
       }).join('');
     }
 
-    const income = txns.filter(t => t.category === 'Income').reduce((s, t) => s + t.amount, 0);
-    const transfer = txns.filter(t => t.category === 'Transfer').reduce((s, t) => s + t.amount, 0);
-    const expense = txns.filter(t => t.type === 'debit' && t.category !== 'Transfer').reduce((s, t) => s + t.amount, 0);
+    const income = monthTxns.filter(t => t.category === 'Income').reduce((s, t) => s + t.amount, 0);
+    const transfer = monthTxns.filter(t => t.category === 'Transfer').reduce((s, t) => s + t.amount, 0);
+    const expense = monthTxns.filter(t => t.type === 'debit' && t.category !== 'Transfer').reduce((s, t) => s + t.amount, 0);
     const max = Math.max(income, transfer, expense, 1);
+
 
     document.getElementById('incomeTotal').textContent = inr(income);
     document.getElementById('transferTotal').textContent = inr(transfer);
@@ -2129,9 +2244,17 @@
   // ---- Charts ----
   function updateMonthReview() {
     const now = new Date();
-    const y = now.getFullYear(), m = now.getMonth();
+    let y, m;
+    if (selectedMonthKey) {
+      const [selY, selM] = selectedMonthKey.split('-').map(Number);
+      y = selY; m = selM - 1;
+    } else {
+      y = now.getFullYear(); m = now.getMonth();
+    }
+    const reviewDate = new Date(y, m, 1);
     document.getElementById('monthReviewTitle').textContent =
-      'Month Review — ' + now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+      'Month Review — ' + reviewDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) +
+      (selectedMonthKey ? '' : ' (current month — pick a month up top to review a different one)');
 
     const monthTxns = latestTxns.filter(t => {
       const d = new Date(t.timestamp);
@@ -2228,10 +2351,11 @@
     Chart.defaults.color = c.text;
     Chart.defaults.font.family = "'Inter', sans-serif";
 
-    // Cash Flow doughnut
-    const income = latestTxns.filter(t => t.category === 'Income').reduce((s, t) => s + t.amount, 0);
-    const transfer = latestTxns.filter(t => t.category === 'Transfer').reduce((s, t) => s + t.amount, 0);
-    const expense = latestTxns.filter(t => t.type === 'debit' && t.category !== 'Transfer').reduce((s, t) => s + t.amount, 0);
+    // Cash Flow doughnut — respects the global month filter
+    const monthTxnsForCharts = getMonthFiltered(latestTxns);
+    const income = monthTxnsForCharts.filter(t => t.category === 'Income').reduce((s, t) => s + t.amount, 0);
+    const transfer = monthTxnsForCharts.filter(t => t.category === 'Transfer').reduce((s, t) => s + t.amount, 0);
+    const expense = monthTxnsForCharts.filter(t => t.type === 'debit' && t.category !== 'Transfer').reduce((s, t) => s + t.amount, 0);
     const cfCtx = document.getElementById('cashFlowChart');
     if (cfCtx) {
       if (cashFlowChartInst) cashFlowChartInst.destroy();
@@ -2287,8 +2411,8 @@
     }
 
     // Spending by Category — only real expenses (debit, not a self-transfer), grouped by
-    // the keyword-matched category, sorted highest spend first.
-    const expenseTxns = latestTxns.filter(t => t.type === 'debit' && t.category !== 'Transfer');
+    // the keyword-matched category, sorted highest spend first, within the selected month.
+    const expenseTxns = monthTxnsForCharts.filter(t => t.type === 'debit' && t.category !== 'Transfer');
     const byCategory = {};
     expenseTxns.forEach(t => {
       const cat = t.spendCategory || 'Other';
