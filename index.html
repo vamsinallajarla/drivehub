@@ -1467,6 +1467,39 @@
     return { ref: digitRuns[digitRuns.length - 1], index: chunk.index };
   }
 
+  // Returns every saved bank account whose FULL account number ends with the given masked
+  // account-ref suffix. Account numbers are (in practice) unique per account, so this is the
+  // trustworthy matcher — unlike the linked mobile number, which several accounts can share.
+  function matchAccountsByAccountNumber(accountRefs) {
+    const bankAccounts = latestAssets.filter(a => a.type === 'bank');
+    const matches = [];
+    for (const acct of bankAccounts) {
+      const fullNumber = acct.accountNumber ? String(acct.accountNumber).replace(/\D/g, '') : '';
+      if (!fullNumber || fullNumber.length < 3) continue;
+      const hit = accountRefs.find(r => r.ref.length >= 3 && fullNumber.endsWith(r.ref));
+      if (hit) matches.push({ acct, index: hit.index });
+    }
+    return matches;
+  }
+
+  // Returns every saved bank account whose linked mobile matches the given masked mobile-ref.
+  // NOTE: several accounts can legitimately share the same linked mobile number (e.g. all of
+  // a person's accounts registered to their one phone), so a match here is NOT on its own
+  // proof of which specific account an SMS refers to — only use it when it resolves uniquely,
+  // or as a last-resort fallback.
+  function matchAccountsByMobile(mobileRef) {
+    if (!mobileRef) return [];
+    const bankAccounts = latestAssets.filter(a => a.type === 'bank');
+    const matches = [];
+    for (const acct of bankAccounts) {
+      const mobile = acct.identifier ? String(acct.identifier).replace(/\D/g, '') : '';
+      if (mobile && mobileRef.ref.length >= 3 && mobile.endsWith(mobileRef.ref)) {
+        matches.push({ acct, index: mobileRef.index });
+      }
+    }
+    return matches;
+  }
+
   /**
    * Detects whether this transaction is a transfer between the user's OWN
    * accounts, and if so, which two accounts and in which direction.
@@ -1477,11 +1510,14 @@
    *      "Vams" for "Vamsi"). Direction isn't derivable this way, so the
    *      description just says "Self transfer".
    *  (b) Two-account match: the message mentions TWO distinct identifiers
-   *      (account number or linked mobile) that both match saved Bank
-   *      Accounts — one match alone isn't enough, since your own account
-   *      number legitimately appears in every SMS about that account. When
-   *      both "debited" and "credited" appear, whichever matched account sits
-   *      closer to each keyword determines the from/to direction.
+   *      that both match saved Bank Accounts. Account-number matches are
+   *      always preferred, since account numbers are unique per account; the
+   *      linked mobile number is only used as a fallback signal, and only
+   *      when it doesn't collide across more than one saved account (several
+   *      of your own bank accounts can share the same registered mobile
+   *      number, so a shared-mobile match alone can't tell them apart). When
+   *      both "debited" and "credited" appear, whichever matched account
+   *      sits closer to each keyword determines the from/to direction.
    */
   function detectSelfTransfer(rawText, counterparty) {
     const fragsToCheck = [counterparty, rawText].filter(Boolean);
@@ -1511,22 +1547,20 @@
     const debitedIdx = lowerScan.indexOf('debited');
     const creditedIdx = lowerScan.indexOf('credited');
 
-    const matches = []; // { name, id, index }
-    for (const acct of bankAccounts) {
-      const fullNumber = acct.accountNumber ? String(acct.accountNumber).replace(/\D/g, '') : '';
-      const mobile = acct.identifier ? String(acct.identifier).replace(/\D/g, '') : '';
-      const name = acct.name || 'Account';
+    // Account-number matches first — these are trustworthy on their own.
+    const acctNumberMatches = matchAccountsByAccountNumber(maskedAccountRefs);
 
-      if (fullNumber && fullNumber.length >= 3) {
-        const hit = maskedAccountRefs.find(r => r.ref.length >= 3 && fullNumber.endsWith(r.ref));
-        if (hit) matches.push({ name, id: acct.id, index: hit.index });
-      }
-      if (mobile && mobileRef && mobileRef.ref.length >= 3 && mobile.endsWith(mobileRef.ref)) {
-        matches.push({ name, id: acct.id, index: mobileRef.index });
-      }
-    }
+    // Mobile-number matches are only usable when they resolve to a SINGLE account —
+    // if 2+ of the user's saved accounts share the same linked mobile, a match here
+    // is ambiguous and must not be trusted to pick one over the other.
+    const rawMobileMatches = matchAccountsByMobile(mobileRef);
+    const uniqueMobileAcctIds = new Set(rawMobileMatches.map(m => m.acct.id));
+    const mobileMatches = uniqueMobileAcctIds.size === 1 ? rawMobileMatches.slice(0, 1) : [];
 
-    // De-dupe by account id, keeping the first occurrence.
+    const matches = [...acctNumberMatches, ...mobileMatches].map(m => ({ name: m.acct.name || 'Account', id: m.acct.id, index: m.index }));
+
+    // De-dupe by account id, keeping the first occurrence (account-number matches come first
+    // in the array above, so they win over a mobile match for the same account).
     const seen = new Set();
     const uniqueMatches = matches.filter(m => {
       if (seen.has(m.id)) return false;
@@ -1614,6 +1648,10 @@
 
   // Finds the single bank account (from saved Bank Accounts) whose account number or linked
   // mobile appears anywhere in the SMS — used to know which account's balance to update.
+  // Account-number matches are checked first, since account numbers are unique per account.
+  // The linked mobile number is only used as a fallback, and only if it resolves to exactly
+  // one account — several of the user's own bank accounts can share the same registered
+  // mobile number, in which case a mobile-only match is ambiguous and must not guess.
   function findMatchingBankAccount(rawText) {
     if (!rawText) return null;
     const bankAccounts = latestAssets.filter(a => a.type === 'bank');
@@ -1624,12 +1662,19 @@
     const accountRefs = extractMaskedAccountRefs(scanText);
     const mobileRef = extractMaskedMobileRef(scanText);
 
-    for (const acct of bankAccounts) {
-      const fullNumber = acct.accountNumber ? String(acct.accountNumber).replace(/\D/g, '') : '';
-      const mobile = acct.identifier ? String(acct.identifier).replace(/\D/g, '') : '';
-      if (fullNumber && fullNumber.length >= 3 && accountRefs.some(r => r.ref.length >= 3 && fullNumber.endsWith(r.ref))) return acct;
-      if (mobile && mobileRef && mobileRef.ref.length >= 3 && mobile.endsWith(mobileRef.ref)) return acct;
+    const acctNumberMatches = matchAccountsByAccountNumber(accountRefs);
+    if (acctNumberMatches.length === 1) return acctNumberMatches[0].acct;
+    if (acctNumberMatches.length > 1) {
+      // Multiple account-number matches (rare) — fall back to whichever sits closest
+      // to the amount, since that's the account the SMS is actually about.
+      return acctNumberMatches[0].acct;
     }
+
+    const mobileMatches = matchAccountsByMobile(mobileRef);
+    const uniqueMobileAcctIds = new Set(mobileMatches.map(m => m.acct.id));
+    if (uniqueMobileAcctIds.size === 1) return mobileMatches[0].acct;
+
+    // Ambiguous (0 matches, or the mobile is shared by 2+ saved accounts) — don't guess.
     return null;
   }
 
