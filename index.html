@@ -464,6 +464,10 @@
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="14" y2="18"/></svg>
         <span>Transactions</span>
       </button>
+      <button class="nav-item" data-page="analytics">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9"/><path d="M11 19V5"/><path d="M18 19v-7"/><path d="M2 19h20"/></svg>
+        <span>Analytics</span>
+      </button>
       <button class="nav-item" data-page="bank">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6"/><path d="M4 10v9h16v-9"/><line x1="9" y1="14" x2="9" y2="19"/><line x1="15" y1="14" x2="15" y2="19"/></svg>
         <span>Bank Accounts</span>
@@ -576,7 +580,19 @@
           <div class="label">Reconciliation</div>
         </div>
       </div>
-      <div class="summary">
+
+      <div class="summary chart-grid">
+        <div class="ledger" style="margin-bottom:0;">
+          <div class="ledger-head"><h3>Cash Flow Breakdown</h3></div>
+          <div style="padding:20px;height:160px;"><canvas id="cashFlowChart"></canvas></div>
+        </div>
+        <div class="ledger" style="margin-bottom:0;">
+          <div class="ledger-head"><h3>Net Worth Composition</h3></div>
+          <div style="padding:20px;height:160px;"><canvas id="netWorthChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="summary" style="margin-top:20px;">
         <div class="sum-card income">
           <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6"/><path d="M4 10v9h16v-9"/><line x1="9" y1="14" x2="9" y2="19"/><line x1="15" y1="14" x2="15" y2="19"/></svg>
           <div class="label">Bank Balance</div>
@@ -604,7 +620,12 @@
         </div>
       </div>
 
-      <div class="summary">
+      <div class="ledger" style="margin-top:20px;">
+        <div class="ledger-head"><h3>Credit Card Utilization</h3></div>
+        <div style="padding:20px;height:160px;"><canvas id="creditUtilChart"></canvas></div>
+      </div>
+
+      <div class="summary" style="margin-top:20px;">
         <div class="sum-card transfer">
           <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5c-1.5-1.5-3.5-2-5.5-2C9 3 5 6.5 5 11.5S9 20 13.5 20c2 0 4-.5 5.5-2"/><path d="M2 11.5h9M2 15h6"/></svg>
           <div class="label">Savings Rate</div>
@@ -630,27 +651,6 @@
           <div class="label">Emergency Fund Target (3 mo)</div>
           <div class="amt" id="emergencyFundTotal">₹0</div>
         </div>
-      </div>
-
-      <div class="summary chart-grid">
-        <div class="ledger" style="margin-bottom:0;">
-          <div class="ledger-head"><h3>Cash Flow Breakdown</h3></div>
-          <div style="padding:20px;height:160px;"><canvas id="cashFlowChart"></canvas></div>
-        </div>
-        <div class="ledger" style="margin-bottom:0;">
-          <div class="ledger-head"><h3>Net Worth Composition</h3></div>
-          <div style="padding:20px;height:160px;"><canvas id="netWorthChart"></canvas></div>
-        </div>
-      </div>
-
-      <div class="ledger" style="margin-top:20px;">
-        <div class="ledger-head"><h3>Credit Card Utilization</h3></div>
-        <div style="padding:20px;height:160px;"><canvas id="creditUtilChart"></canvas></div>
-      </div>
-
-      <div class="ledger" style="margin-top:20px;">
-        <div class="ledger-head"><h3>Spending by Category</h3></div>
-        <div style="padding:20px;height:180px;"><canvas id="categoryChart"></canvas></div>
       </div>
 
       <div class="footnote-canvas">Bank-only sync via SMS. Salary credits are the only entries counted as Income; every other credit is Transfer.</div>
@@ -724,6 +724,34 @@
         <div id="txnList">
           <div class="empty"><div class="big">No entries yet</div>Waiting for the first synced SMS or manual entry.</div>
         </div>
+      </div>
+    </section>
+
+    <section class="page" id="page-analytics">
+      <h2>Analytics</h2>
+      <div class="footnote-canvas" style="margin-top:-12px;margin-bottom:20px;">Visualization and tracking, separate from the Overview totals. Respects the month picker up top; use "All time" for the full trend.</div>
+
+      <div class="ledger">
+        <div class="ledger-head"><h3>Spending by Category</h3></div>
+        <div style="padding:20px;height:220px;"><canvas id="categoryChart"></canvas></div>
+      </div>
+
+      <div class="ledger">
+        <div class="ledger-head">
+          <h3>Category Breakdown</h3>
+          <div class="count" id="catBreakdownTotal"></div>
+        </div>
+        <div id="categoryBreakdownList"></div>
+      </div>
+
+      <div class="ledger">
+        <div class="ledger-head"><h3>Income vs Expense — Last 6 Months</h3></div>
+        <div style="padding:20px;height:220px;"><canvas id="trendChart"></canvas></div>
+      </div>
+
+      <div class="ledger">
+        <div class="ledger-head"><h3>Top Counterparties (Spending)</h3></div>
+        <div id="topCounterpartiesList"></div>
       </div>
     </section>
 
@@ -1036,7 +1064,7 @@
   let currentUid = null;
   let latestTxns = [];
   let latestAssets = [];
-  let cashFlowChartInst, netWorthChartInst, creditUtilChartInst, monthCashFlowChartInst, categoryChartInst;
+  let cashFlowChartInst, netWorthChartInst, creditUtilChartInst, monthCashFlowChartInst, categoryChartInst, trendChartInst;
   let currentBankSum = 0;
   let currentSurplus = 0;
   let selectedMonthKey = null; // null = "All time"; otherwise 'YYYY-MM'
@@ -1153,6 +1181,10 @@
       btn.classList.add('active');
       document.getElementById('page-' + btn.dataset.page).classList.add('active');
       closeSidebar();
+      // Chart.js can't size a canvas correctly while its page is display:none, so
+      // re-render whenever a page holding charts becomes visible.
+      if (btn.dataset.page === 'overview' || btn.dataset.page === 'analytics') updateCharts();
+      if (btn.dataset.page === 'monthreview') updateMonthReview();
     });
   });
 
@@ -2560,6 +2592,87 @@
         }
       });
     }
+
+    renderCategoryBreakdown(catEntries, expenseTxns.reduce((s, t) => s + t.amount, 0));
+    renderTrendChart(c);
+    renderTopCounterparties(monthTxnsForCharts);
+  }
+
+  // Textual list version of the category chart — same catEntries/total so the numbers
+  // always agree with the chart above it. Lives on the Analytics page.
+  function renderCategoryBreakdown(catEntries, total) {
+    const listEl = document.getElementById('categoryBreakdownList');
+    const totalEl = document.getElementById('catBreakdownTotal');
+    if (!listEl) return;
+    if (totalEl) totalEl.textContent = total ? inr(total) + ' total' : '';
+    if (!catEntries.length) {
+      listEl.innerHTML = `<div class="empty">No expenses in this scope yet.</div>`;
+      return;
+    }
+    listEl.innerHTML = catEntries.map(([cat, amt]) => {
+      const pct = total > 0 ? (amt / total * 100) : 0;
+      return `
+        <div class="txn" style="grid-template-columns:1fr auto;">
+          <div class="desc">${cat}<div class="bar" style="max-width:260px;"><div style="width:${pct.toFixed(1)}%;background:var(--gold);"></div></div></div>
+          <div class="amt debit">${inr(amt)} <span style="font-size:11px;color:var(--muted);font-weight:500;">(${pct.toFixed(1)}%)</span></div>
+        </div>`;
+    }).join('');
+  }
+
+  // Income vs Expense trend over the last 6 calendar months (independent of the global
+  // month picker — this chart's whole point is to show change across months).
+  function renderTrendChart(c) {
+    const ctx = document.getElementById('trendChart');
+    if (!ctx || typeof Chart === 'undefined') return;
+    const now = new Date();
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({ y: d.getFullYear(), m: d.getMonth(), label: d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }) });
+    }
+    const incomeSeries = months.map(({ y, m }) =>
+      latestTxns.filter(t => t.category === 'Income' && new Date(t.timestamp).getFullYear() === y && new Date(t.timestamp).getMonth() === m)
+        .reduce((s, t) => s + t.amount, 0));
+    const expenseSeries = months.map(({ y, m }) =>
+      latestTxns.filter(t => t.type === 'debit' && t.category !== 'Transfer' && new Date(t.timestamp).getFullYear() === y && new Date(t.timestamp).getMonth() === m)
+        .reduce((s, t) => s + t.amount, 0));
+
+    if (trendChartInst) trendChartInst.destroy();
+    trendChartInst = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: months.map(m => m.label),
+        datasets: [
+          { label: 'Income', data: incomeSeries, borderColor: c.credit, backgroundColor: c.credit, tension: 0.3 },
+          { label: 'Expense', data: expenseSeries, borderColor: c.debit, backgroundColor: c.debit, tension: 0.3 }
+        ]
+      },
+      options: {
+        maintainAspectRatio: false,
+        scales: { x: { grid: { color: c.grid } }, y: { grid: { color: c.grid } } },
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+  }
+
+  // Top counterparties by spend within the current scope (respects the global month
+  // picker, same as the category chart) — quick "who am I paying the most" glance.
+  function renderTopCounterparties(scopeTxns) {
+    const listEl = document.getElementById('topCounterpartiesList');
+    if (!listEl) return;
+    const spendTxns = scopeTxns.filter(t => t.type === 'debit' && t.category !== 'Transfer' && t.counterparty);
+    const byParty = {};
+    spendTxns.forEach(t => { byParty[t.counterparty] = (byParty[t.counterparty] || 0) + t.amount; });
+    const entries = Object.entries(byParty).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    if (!entries.length) {
+      listEl.innerHTML = `<div class="empty">No spending transactions in this scope yet.</div>`;
+      return;
+    }
+    listEl.innerHTML = entries.map(([name, amt]) => `
+      <div class="txn" style="grid-template-columns:1fr auto;">
+        <div class="desc">${name}</div>
+        <div class="amt debit">${inr(amt)}</div>
+      </div>`).join('');
   }
 </script>
 </body>
