@@ -34,6 +34,7 @@
     --neon-glow:var(--primary-soft);
     --shadow-card:0 1px 2px rgba(30,42,59,0.04), 0 6px 16px rgba(30,42,59,0.06);
     --shadow-card-hover:0 2px 4px rgba(30,42,59,0.06), 0 12px 28px rgba(30,42,59,0.10);
+    --accent-1:#3B82F6; --accent-2:#F59E0B; --accent-3:#8B5CF6; --accent-4:#14B8A6; --accent-5:#EC4899; --accent-6:#6366F1;
   }
   :root[data-theme="dark"]{
     --ink:#E7ECF5;
@@ -53,9 +54,32 @@
     --neon-glow:var(--primary-soft);
     --shadow-card:0 1px 2px rgba(0,0,0,0.2), 0 6px 20px rgba(0,0,0,0.28);
     --shadow-card-hover:0 2px 4px rgba(0,0,0,0.25), 0 14px 30px rgba(0,0,0,0.35);
+    --accent-1:#5B9DF9; --accent-2:#FBBF24; --accent-3:#A78BFA; --accent-4:#2DD4BF; --accent-5:#F472B6; --accent-6:#818CF8;
   }
-  :root[data-theme="dark"] button.ghost{color:var(--ink);}
-  :root[data-theme="dark"] input, :root[data-theme="dark"] select{background:#10151F;color:var(--ink);border-color:var(--rule);}
+  :root[data-theme="aurora"]{
+    --ink:#F1F0FF;
+    --paper:#0B0A1F;
+    --paper-raised:#15142E;
+    --rule:#2C2A52;
+    --credit:#3DF2B0;
+    --debit:#FF6A9B;
+    --gold:#FFC857;
+    --muted:#9C97C9;
+    --glass-card:rgba(35,32,74,0.55);
+    --glass-border:rgba(178,157,255,0.22);
+    --glass-text:var(--ink);
+    --primary:#8B7BFF;
+    --primary-soft:rgba(139,123,255,0.2);
+    --neon:#00E5FF;
+    --neon-glow:rgba(0,229,255,0.18);
+    --shadow-card:0 1px 2px rgba(0,0,0,0.25), 0 6px 24px rgba(90,60,220,0.22);
+    --shadow-card-hover:0 2px 6px rgba(0,0,0,0.3), 0 18px 40px rgba(120,80,255,0.32);
+    --accent-1:#7C5CFF; --accent-2:#FFB84D; --accent-3:#FF5FA8; --accent-4:#2FE6C8; --accent-5:#FF7A6E; --accent-6:#5CC8FF;
+  }
+  :root[data-theme="dark"] button.ghost, :root[data-theme="aurora"] button.ghost{color:var(--ink);}
+  :root[data-theme="dark"] input, :root[data-theme="dark"] select,
+  :root[data-theme="aurora"] input, :root[data-theme="aurora"] select{background:#10151F;color:var(--ink);border-color:var(--rule);}
+  :root[data-theme="aurora"] input, :root[data-theme="aurora"] select{background:#181733;}
   :root[data-theme="bw"]{
     --ink:#000000;
     --paper:#FFFFFF;
@@ -74,6 +98,7 @@
     --neon-glow:var(--primary-soft);
     --shadow-card:0 1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.06);
     --shadow-card-hover:0 2px 4px rgba(0,0,0,0.08), 0 10px 20px rgba(0,0,0,0.10);
+    --accent-1:#000000; --accent-2:#333333; --accent-3:#555555; --accent-4:#777777; --accent-5:#999999; --accent-6:#BBBBBB;
   }
   :root[data-theme="bw"] button{color:#fff;}
   :root[data-theme="bw"] button.ghost{color:var(--ink);}
@@ -108,6 +133,22 @@
       radial-gradient(circle at 10% 0%, rgba(59,130,246,0.10) 0%, transparent 40%),
       radial-gradient(circle at 90% 15%, rgba(139,92,246,0.10) 0%, transparent 45%),
       var(--paper);
+  }
+  :root[data-theme="aurora"] body{
+    background:
+      radial-gradient(circle at 12% 8%, rgba(124,92,255,0.30) 0%, transparent 42%),
+      radial-gradient(circle at 88% 12%, rgba(255,95,168,0.22) 0%, transparent 45%),
+      radial-gradient(circle at 50% 92%, rgba(47,230,200,0.20) 0%, transparent 50%),
+      var(--paper);
+    background-size:180% 180%, 180% 180%, 180% 180%, auto;
+    animation:auroraDrift 22s ease-in-out infinite;
+  }
+  @keyframes auroraDrift{
+    0%,100%{background-position:0% 0%, 100% 0%, 50% 100%, 0 0;}
+    50%{background-position:20% 15%, 80% 20%, 45% 85%, 0 0;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    :root[data-theme="aurora"] body{animation:none;}
   }
   .page h2{font-family:'Space Grotesk',sans-serif;font-size:24px;margin:0 0 20px;color:var(--ink);letter-spacing:-0.01em;}
   .footnote-canvas{margin-top:20px;font-size:11.5px;color:var(--muted);}
@@ -177,10 +218,15 @@
   .sidebar .brand .eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--primary);margin-bottom:4px;}
   .sidebar .brand h1{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:22px;margin:0 0 20px;letter-spacing:-0.01em;color:var(--ink);}
   .nav{display:flex;flex-direction:column;gap:3px;}
-  .nav-item{background:none;border:none;color:var(--muted);text-align:left;padding:10px 14px;border-radius:10px;font-size:13.5px;font-weight:500;cursor:pointer;transition:background .15s, color .15s;display:flex;align-items:center;gap:10px;width:100%;}
-  .nav-item .nav-icon{width:18px;height:18px;flex-shrink:0;opacity:0.85;}
-  .nav-item:hover{background:var(--primary-soft);color:var(--ink);}
-  .nav-item.active{background:var(--primary);color:#fff;font-weight:600;box-shadow:0 4px 12px var(--primary-soft);}
+  .nav-item{background:none;border:none;color:var(--muted);text-align:left;padding:10px 14px;border-radius:10px;font-size:13.5px;font-weight:500;cursor:pointer;transition:background .2s ease, color .2s ease, transform .2s ease, box-shadow .2s ease;display:flex;align-items:center;gap:10px;width:100%;}
+  .nav-item .nav-icon{width:18px;height:18px;flex-shrink:0;opacity:0.85;transition:transform .2s ease;}
+  .nav-item:hover{background:var(--primary-soft);color:var(--ink);transform:translateX(2px);}
+  .nav-item:hover .nav-icon{transform:scale(1.08);}
+  .nav-item.active{
+    background:linear-gradient(120deg, var(--primary), color-mix(in srgb, var(--primary) 55%, var(--accent-3)));
+    color:#fff;font-weight:600;
+    box-shadow:0 4px 16px color-mix(in srgb, var(--primary) 45%, transparent), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
   .nav-item.active .nav-icon{opacity:1;}
   .sidebar-footer{margin-top:auto;padding-top:16px;border-top:1px solid var(--rule);}
   .status{font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:4px 10px 4px 8px;border:1px solid var(--rule);border-radius:20px;display:inline-flex;align-items:center;gap:6px;color:var(--muted);}
@@ -319,14 +365,31 @@
     background:var(--glass-card);
     backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);
     border:1px solid var(--glass-border);border-radius:16px;padding:18px 20px;position:relative;color:var(--glass-text);
-    overflow:hidden;transition:box-shadow .2s, transform .2s;
+    overflow:hidden;transition:box-shadow .25s ease, transform .25s ease, border-color .25s ease;
     box-shadow:var(--shadow-card), inset 0 1px 0 rgba(255,255,255,0.08);
     --badge:var(--primary);
+    animation:cardIn .5s cubic-bezier(.22,1,.36,1) backwards;
   }
-  .sum-card:hover{box-shadow:var(--shadow-card-hover), inset 0 1px 0 rgba(255,255,255,0.1);transform:translateY(-3px);}
+  .sum-card:hover{
+    box-shadow:var(--shadow-card-hover), 0 0 0 1px color-mix(in srgb, var(--badge) 30%, transparent), 0 10px 32px color-mix(in srgb, var(--badge) 22%, transparent), inset 0 1px 0 rgba(255,255,255,0.1);
+    transform:translateY(-4px);
+    border-color:color-mix(in srgb, var(--badge) 40%, var(--glass-border));
+  }
+  .sum-card:hover .hero-icon, .sum-card:hover .card-icon{transform:scale(1.08) rotate(-4deg);}
+  @keyframes cardIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+  .summary .sum-card:nth-child(1){animation-delay:.03s;}
+  .summary .sum-card:nth-child(2){animation-delay:.09s;}
+  .summary .sum-card:nth-child(3){animation-delay:.15s;}
+  .summary .sum-card:nth-child(4){animation-delay:.21s;}
+  .summary .sum-card:nth-child(5){animation-delay:.27s;}
+  .summary .sum-card:nth-child(6){animation-delay:.33s;}
+  @media (prefers-reduced-motion: reduce){
+    .sum-card{animation:none;}
+    .sum-card:hover .hero-icon, .sum-card:hover .card-icon{transform:none;}
+  }
   .sum-card::before{
     content:"";position:absolute;inset:0;pointer-events:none;border-radius:16px;
-    background:radial-gradient(circle at 85% -10%, color-mix(in srgb, var(--badge) 20%, transparent) 0%, transparent 55%);
+    background:radial-gradient(circle at 85% -10%, color-mix(in srgb, var(--badge) 24%, transparent) 0%, transparent 55%);
   }
   .sum-card::after{
     content:"";position:absolute;top:16px;right:16px;width:34px;height:34px;border-radius:10px;
@@ -334,20 +397,20 @@
     backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
     box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--badge) 35%, transparent), inset 0 1px 0 rgba(255,255,255,0.15);
   }
-  .card-icon{position:absolute;top:23px;right:23px;width:20px;height:20px;color:var(--badge);z-index:2;pointer-events:none;}
-  .summary .sum-card:nth-child(6n+1){--badge:#3B82F6;}
-  .summary .sum-card:nth-child(6n+2){--badge:#F59E0B;}
-  .summary .sum-card:nth-child(6n+3){--badge:#8B5CF6;}
-  .summary .sum-card:nth-child(6n+4){--badge:#14B8A6;}
-  .summary .sum-card:nth-child(6n+5){--badge:#EC4899;}
-  .summary .sum-card:nth-child(6n+6){--badge:#6366F1;}
+  .card-icon{position:absolute;top:23px;right:23px;width:20px;height:20px;color:var(--badge);z-index:2;pointer-events:none;transition:transform .25s ease;}
+  .summary .sum-card:nth-child(6n+1){--badge:var(--accent-1);}
+  .summary .sum-card:nth-child(6n+2){--badge:var(--accent-2);}
+  .summary .sum-card:nth-child(6n+3){--badge:var(--accent-3);}
+  .summary .sum-card:nth-child(6n+4){--badge:var(--accent-4);}
+  .summary .sum-card:nth-child(6n+5){--badge:var(--accent-5);}
+  .summary .sum-card:nth-child(6n+6){--badge:var(--accent-6);}
   .sum-card .label{position:relative;z-index:1;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);max-width:75%;}
   .sum-card .amt{position:relative;z-index:1;font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;margin-top:8px;font-variant-numeric:tabular-nums;letter-spacing:-0.01em;}
   .sum-card.income .amt{color:var(--credit);}
   .sum-card.transfer .amt{color:var(--gold);}
   .sum-card.expense .amt{color:var(--debit);}
   .bar{height:5px;border-radius:3px;background:var(--rule);margin-top:10px;overflow:hidden;position:relative;z-index:1;}
-  .bar > div{height:100%;transition:width .4s ease;border-radius:3px;}
+  .bar > div{height:100%;transition:width .6s cubic-bezier(.22,1,.36,1);border-radius:3px;}
   .income .bar > div{background:var(--credit);}
   .transfer .bar > div{background:var(--gold);}
   .expense .bar > div{background:var(--debit);}
@@ -364,12 +427,24 @@
     backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
     box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--badge) 35%, transparent), inset 0 1px 0 rgba(255,255,255,0.15);
     font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;flex-shrink:0;
+    transition:transform .25s ease, box-shadow .25s ease;
+    animation:iconBreathe 3.6s ease-in-out infinite;
   }
+  @keyframes iconBreathe{
+    0%,100%{box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--badge) 35%, transparent), inset 0 1px 0 rgba(255,255,255,0.15), 0 0 0 0 color-mix(in srgb, var(--badge) 0%, transparent);}
+    50%{box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--badge) 45%, transparent), inset 0 1px 0 rgba(255,255,255,0.15), 0 0 14px 1px color-mix(in srgb, var(--badge) 35%, transparent);}
+  }
+  @media (prefers-reduced-motion: reduce){ .hero-icon{animation:none;} }
   .hero-chip{
     font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;
     background:color-mix(in srgb, var(--badge) 14%, transparent);color:var(--badge);white-space:nowrap;
+    transition:background .3s ease, color .3s ease;
   }
-  .hero-card .amt{margin-top:0;}
+  .hero-card .amt{
+    margin-top:0;
+    background:linear-gradient(90deg, var(--glass-text) 0%, var(--badge) 140%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
   .hero-card .label{margin-top:3px;}
 
   .ledger{
@@ -377,12 +452,26 @@
     backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);
     border:1px solid var(--glass-border);border-radius:16px;overflow:hidden;margin-bottom:20px;color:var(--glass-text);
     box-shadow:var(--shadow-card), inset 0 1px 0 rgba(255,255,255,0.06);
+    position:relative;animation:cardIn .5s cubic-bezier(.22,1,.36,1) backwards;animation-delay:.1s;
+    transition:box-shadow .25s ease, transform .25s ease;
   }
+  .ledger::before{
+    content:"";position:absolute;top:0;left:0;right:0;height:3px;z-index:2;
+    background:linear-gradient(90deg, var(--accent-1), var(--accent-3), var(--accent-4), var(--accent-5));
+    opacity:.85;
+  }
+  @media (prefers-reduced-motion: reduce){ .ledger{animation:none;} }
   .ledger-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--rule);}
-  .ledger-head h3{font-family:'Space Grotesk',sans-serif;margin:0;font-size:18px;}
+  .ledger-head h3{font-family:'Space Grotesk',sans-serif;margin:0;font-size:18px;display:flex;align-items:center;gap:9px;}
+  .ledger-head h3::before{
+    content:"";width:8px;height:8px;border-radius:50%;flex-shrink:0;
+    background:linear-gradient(135deg, var(--accent-1), var(--accent-5));
+    box-shadow:0 0 8px color-mix(in srgb, var(--accent-1) 55%, transparent);
+  }
   .ledger-head .count{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);}
   .ledger-form{padding:16px 20px;border-bottom:1px solid var(--rule);}
-  .txn{display:grid;grid-template-columns:110px 1fr auto auto auto;gap:14px;align-items:center;padding:13px 20px;border-bottom:1px solid var(--rule);}
+  .txn{display:grid;grid-template-columns:110px 1fr auto auto auto;gap:14px;align-items:center;padding:13px 20px;border-bottom:1px solid var(--rule);transition:background .15s ease;}
+  .txn:hover{background:color-mix(in srgb, var(--primary) 5%, transparent);}
   .txn-actions{display:flex;gap:4px;}
   .icon-btn{padding:4px 8px;font-size:11px;background:transparent;color:var(--muted);border:1px solid var(--rule);box-shadow:none;transition:color .15s, border-color .15s;}
   .icon-btn:hover{opacity:1;transform:none;}
@@ -514,7 +603,7 @@
         <button class="ghost" id="allTimeBtn" title="Show all-time totals instead of one month">All time</button>
       </div>
       <div class="topbar-actions">
-        <button id="themeToggleBtn" class="icon-chip" title="Toggle theme (Light / Dark / Black &amp; White)" aria-label="Toggle theme">
+        <button id="themeToggleBtn" class="icon-chip" title="Toggle theme (Light / Dark / Aurora / Black &amp; White)" aria-label="Toggle theme">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><g id="themeToggleIcon"><circle cx="12" cy="12" r="4.5"/><line x1="12" y1="1.5" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22.5"/><line x1="4.2" y1="4.2" x2="6" y2="6"/><line x1="18" y1="18" x2="19.8" y2="19.8"/><line x1="1.5" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.5" y2="12"/><line x1="4.2" y1="19.8" x2="6" y2="18"/><line x1="18" y1="6" x2="19.8" y2="4.2"/></g></svg>
         </button>
         <div class="topbar-user-wrap">
@@ -910,6 +999,7 @@
           <div class="row" style="gap:12px;">
             <button class="ghost theme-option" data-theme="light">☀ Light</button>
             <button class="ghost theme-option" data-theme="dark">☾ Dark</button>
+            <button class="ghost theme-option" data-theme="aurora">✦ Aurora</button>
             <button class="ghost theme-option" data-theme="bw">◐ Black &amp; White</button>
           </div>
         </div>
@@ -1042,6 +1132,50 @@
   function inr(n) {
     return '₹' + Math.round(n || 0).toLocaleString('en-IN');
   }
+  const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Tweens an element's displayed rupee amount from whatever it currently shows to
+  // `target`, so headline numbers count up/down instead of jumping — a small touch that
+  // makes the dashboard feel alive whenever data changes (month switch, new SMS, edits).
+  // The raw numeric value is cached on the element (dataset.val) so repeated calls tween
+  // from the last real value rather than re-parsing formatted text.
+  function animateAmount(el, target) {
+    if (!el) return;
+    const start = parseFloat(el.dataset.val || '0') || 0;
+    target = target || 0;
+    el.dataset.val = target;
+    if (prefersReducedMotion || Math.abs(target - start) < 1) { el.textContent = inr(target); return; }
+    const duration = 550;
+    const t0 = performance.now();
+    function tick(now) {
+      const p = Math.min((now - t0) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = inr(start + (target - start) * eased);
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  // Same idea, but for the signed +/− cards (Monthly Surplus, Reconciliation) that also
+  // switch color between credit/debit depending on sign.
+  function animateSignedAmount(el, target) {
+    if (!el) return;
+    const start = parseFloat(el.dataset.val || '0') || 0;
+    target = target || 0;
+    el.dataset.val = target;
+    const render = (v) => { el.textContent = (v >= 0 ? '+' : '−') + inr(Math.abs(v)); };
+    el.style.color = target >= 0 ? 'var(--credit)' : 'var(--debit)';
+    if (prefersReducedMotion || Math.abs(target - start) < 1) { render(target); return; }
+    const duration = 550;
+    const t0 = performance.now();
+    function tick(now) {
+      const p = Math.min((now - t0) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      render(start + (target - start) * eased);
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
   // Formats a timestamp as YYYY-MM-DD using local time (not UTC), so the date shown in
   // the <input type="date"> always matches the date the transaction actually shows
   // under in the ledger — toISOString() would shift late-evening IST times to the next
@@ -1069,11 +1203,12 @@
   let currentSurplus = 0;
   let selectedMonthKey = null; // null = "All time"; otherwise 'YYYY-MM'
 
-  // ---- Theme toggle (Light / Dark / Black & White) ----
-  const THEME_ORDER = ['light', 'dark', 'bw'];
+  // ---- Theme toggle (Light / Dark / Aurora / Black & White) ----
+  const THEME_ORDER = ['light', 'dark', 'aurora', 'bw'];
   const THEME_ICONS = {
     light: '<circle cx="12" cy="12" r="4.5"/><line x1="12" y1="1.5" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22.5"/><line x1="4.2" y1="4.2" x2="6" y2="6"/><line x1="18" y1="18" x2="19.8" y2="19.8"/><line x1="1.5" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.5" y2="12"/><line x1="4.2" y1="19.8" x2="6" y2="18"/><line x1="18" y1="6" x2="19.8" y2="4.2"/>',
     dark: '<path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/>',
+    aurora: '<path d="M12 2l1.8 5.6L19 9l-5.2 1.4L12 16l-1.8-5.6L5 9l5.2-1.4z"/><path d="M19 15l.8 2.4L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.6z"/>',
     bw: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 010 17z" fill="currentColor" stroke="none"/>'
   };
   function applyTheme(theme) {
@@ -2166,18 +2301,16 @@
     const max = Math.max(income, transfer, expense, 1);
 
 
-    document.getElementById('incomeTotal').textContent = inr(income);
-    document.getElementById('transferTotal').textContent = inr(transfer);
-    document.getElementById('expenseTotal').textContent = inr(expense);
+    animateAmount(document.getElementById('incomeTotal'), income);
+    animateAmount(document.getElementById('transferTotal'), transfer);
+    animateAmount(document.getElementById('expenseTotal'), expense);
     document.getElementById('incomeBar').textContent = Math.round(income / max * 100) + '%';
     document.getElementById('transferBar').textContent = Math.round(transfer / max * 100) + '%';
     document.getElementById('expenseBar').textContent = Math.round(expense / max * 100) + '%';
 
     const surplus = income - expense;
     currentSurplus = surplus;
-    const surplusEl = document.getElementById('surplusTotal');
-    surplusEl.textContent = (surplus >= 0 ? '+' : '−') + inr(Math.abs(surplus));
-    surplusEl.style.color = surplus >= 0 ? 'var(--credit)' : 'var(--debit)';
+    animateSignedAmount(document.getElementById('surplusTotal'), surplus);
 
     const savingsRatePct = income > 0 ? ((income - expense) / income * 100) : 0;
     document.getElementById('savingsRate').textContent = savingsRatePct.toFixed(1) + '%';
@@ -2324,8 +2457,7 @@
     const el = document.getElementById('reconcileTotal');
     if (!el) return;
     const diff = currentBankSum - currentSurplus;
-    el.textContent = (diff >= 0 ? '+' : '−') + inr(Math.abs(diff));
-    el.style.color = diff >= 0 ? 'var(--credit)' : 'var(--debit)';
+    animateSignedAmount(el, diff);
   }
 
   function renderAssets() {
@@ -2346,14 +2478,14 @@
       .reduce((s, a) => s + a.emi, 0);
 
     const bankSum = latestAssets.filter(a => a.type === 'bank').reduce((s, a) => s + (a.balance || 0), 0);
-    document.getElementById('bankBalanceTotal').textContent = inr(bankSum);
+    animateAmount(document.getElementById('bankBalanceTotal'), bankSum);
     currentBankSum = bankSum;
     updateReconciliation();
 
-    document.getElementById('assetsTotal').textContent = inr(assetsSum);
-    document.getElementById('liabilitiesTotal').textContent = inr(liabSum);
-    document.getElementById('netWorthTotal').textContent = inr(assetsSum - liabSum);
-    document.getElementById('emiTotal').textContent = inr(emiSum);
+    animateAmount(document.getElementById('assetsTotal'), assetsSum);
+    animateAmount(document.getElementById('liabilitiesTotal'), liabSum);
+    animateAmount(document.getElementById('netWorthTotal'), assetsSum - liabSum);
+    animateAmount(document.getElementById('emiTotal'), emiSum);
 
     // Next EMI Due — soonest upcoming due date across all loans that have one recorded.
     const loansWithDue = latestAssets.filter(a => a.type === 'loan' && a.nextDueDate)
@@ -2478,9 +2610,14 @@
         type: 'doughnut',
         data: {
           labels: ['Income', 'Transfer', 'Expense'],
-          datasets: [{ data: [income, transfer, expense], backgroundColor: [c.credit, c.gold, c.debit], borderWidth: 0 }]
+          datasets: [{ data: [income, transfer, expense], backgroundColor: [c.credit, c.gold, c.debit], borderWidth: 0, hoverOffset: 8 }]
         },
-        options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        options: {
+          maintainAspectRatio: false, cutout: '68%',
+          animation: { duration: 700, easing: 'easeOutQuart' },
+          plugins: { legend: { position: 'bottom' } }
+        },
+        plugins: [centerTextPlugin(() => 'Net flow', () => inr(income - expense), c)]
       });
     }
 
@@ -2488,7 +2625,7 @@
   }
 
   function themeColors() {
-    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark' || document.documentElement.getAttribute('data-theme') === 'aurora';
     return {
       text: dark ? '#EAF0FF' : '#0B0F19',
       grid: dark ? '#212A3D' : '#D6DCEA',
@@ -2497,6 +2634,31 @@
       gold: dark ? '#FFC069' : '#B9781E',
       muted: dark ? '#8892A6' : '#6B7385',
       neon: dark ? '#5B9DF9' : '#3B82F6'
+    };
+  }
+
+  // Draws a big total + small label in the empty middle of a doughnut chart, so the
+  // headline number is legible at a glance instead of only living in the legend.
+  function centerTextPlugin(getLabel, getValue, colors) {
+    return {
+      id: 'centerText_' + Math.random().toString(36).slice(2),
+      afterDraw(chart) {
+        const { ctx, chartArea } = chart;
+        if (!chartArea) return;
+        const x = (chartArea.left + chartArea.right) / 2;
+        const y = (chartArea.top + chartArea.bottom) / 2;
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = "700 17px 'JetBrains Mono', monospace";
+        ctx.fillStyle = colors.text;
+        ctx.fillText(getValue(), x, y - 6);
+        ctx.font = "600 9.5px 'JetBrains Mono', monospace";
+        ctx.fillStyle = colors.muted;
+        ctx.letterSpacing = '1px';
+        ctx.fillText(getLabel().toUpperCase(), x, y + 12);
+        ctx.restore();
+      }
     };
   }
 
@@ -2518,9 +2680,14 @@
         type: 'doughnut',
         data: {
           labels: ['Income', 'Transfer', 'Expense'],
-          datasets: [{ data: [income, transfer, expense], backgroundColor: [c.credit, c.gold, c.debit], borderWidth: 0 }]
+          datasets: [{ data: [income, transfer, expense], backgroundColor: [c.credit, c.gold, c.debit], borderWidth: 0, hoverOffset: 8 }]
         },
-        options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        options: {
+          maintainAspectRatio: false, cutout: '68%',
+          animation: { duration: 700, easing: 'easeOutQuart' },
+          plugins: { legend: { position: 'bottom' } }
+        },
+        plugins: [centerTextPlugin(() => 'Net flow', () => inr(income - expense), c)]
       });
     }
 
@@ -2536,9 +2703,14 @@
         type: 'doughnut',
         data: {
           labels: ['Bank', 'Investments', 'Credit Card Debt', 'Loan Debt'],
-          datasets: [{ data: [bank, inv, cc, loan], backgroundColor: [c.credit, c.gold, c.debit, c.muted], borderWidth: 0 }]
+          datasets: [{ data: [bank, inv, cc, loan], backgroundColor: [c.credit, c.gold, c.debit, c.muted], borderWidth: 0, hoverOffset: 8 }]
         },
-        options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        options: {
+          maintainAspectRatio: false, cutout: '68%',
+          animation: { duration: 700, easing: 'easeOutQuart' },
+          plugins: { legend: { position: 'bottom' } }
+        },
+        plugins: [centerTextPlugin(() => 'Net worth', () => inr(bank + inv - cc - loan), c)]
       });
     }
 
@@ -2552,13 +2724,14 @@
         data: {
           labels: cards.map(a => a.name),
           datasets: [
-            { label: 'Outstanding', data: cards.map(a => a.outstanding || 0), backgroundColor: c.debit },
-            { label: 'Available', data: cards.map(a => Math.max((a.creditLimit || 0) - (a.outstanding || 0), 0)), backgroundColor: c.credit }
+            { label: 'Outstanding', data: cards.map(a => a.outstanding || 0), backgroundColor: c.debit, borderRadius: 6, borderSkipped: false },
+            { label: 'Available', data: cards.map(a => Math.max((a.creditLimit || 0) - (a.outstanding || 0), 0)), backgroundColor: c.credit, borderRadius: 6, borderSkipped: false }
           ]
         },
         options: {
           maintainAspectRatio: false,
           indexAxis: 'y',
+          animation: { duration: 650, easing: 'easeOutQuart' },
           scales: { x: { stacked: true, grid: { color: c.grid } }, y: { stacked: true, grid: { color: c.grid } } },
           plugins: { legend: { position: 'bottom' } }
         }
@@ -2582,11 +2755,12 @@
         type: 'bar',
         data: {
           labels: catEntries.map(([cat]) => cat),
-          datasets: [{ data: catEntries.map(([, amt]) => amt), backgroundColor: catEntries.map((_, i) => palette[i % palette.length]) }]
+          datasets: [{ data: catEntries.map(([, amt]) => amt), backgroundColor: catEntries.map((_, i) => palette[i % palette.length]), borderRadius: 6, borderSkipped: false }]
         },
         options: {
           maintainAspectRatio: false,
           indexAxis: 'y',
+          animation: { duration: 650, easing: 'easeOutQuart' },
           scales: { x: { grid: { color: c.grid } }, y: { grid: { color: c.grid } } },
           plugins: { legend: { display: false } }
         }
@@ -2638,21 +2812,45 @@
         .reduce((s, t) => s + t.amount, 0));
 
     if (trendChartInst) trendChartInst.destroy();
+    const ctx2d = ctx.getContext('2d');
+    const incomeFill = ctx2d.createLinearGradient(0, 0, 0, 220);
+    incomeFill.addColorStop(0, color_mix_fallback(c.credit, 0.35));
+    incomeFill.addColorStop(1, color_mix_fallback(c.credit, 0));
+    const expenseFill = ctx2d.createLinearGradient(0, 0, 0, 220);
+    expenseFill.addColorStop(0, color_mix_fallback(c.debit, 0.3));
+    expenseFill.addColorStop(1, color_mix_fallback(c.debit, 0));
     trendChartInst = new Chart(ctx, {
       type: 'line',
       data: {
         labels: months.map(m => m.label),
         datasets: [
-          { label: 'Income', data: incomeSeries, borderColor: c.credit, backgroundColor: c.credit, tension: 0.3 },
-          { label: 'Expense', data: expenseSeries, borderColor: c.debit, backgroundColor: c.debit, tension: 0.3 }
+          { label: 'Income', data: incomeSeries, borderColor: c.credit, backgroundColor: incomeFill, fill: true, tension: 0.35, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: c.credit, borderWidth: 2.5 },
+          { label: 'Expense', data: expenseSeries, borderColor: c.debit, backgroundColor: expenseFill, fill: true, tension: 0.35, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: c.debit, borderWidth: 2.5 }
         ]
       },
       options: {
         maintainAspectRatio: false,
+        animation: { duration: 700, easing: 'easeOutQuart' },
+        interaction: { mode: 'index', intersect: false },
         scales: { x: { grid: { color: c.grid } }, y: { grid: { color: c.grid } } },
         plugins: { legend: { position: 'bottom' } }
       }
     });
+  }
+
+  // Chart.js gradients need real rgba stops — this converts a hex/rgb color string into
+  // an rgba() with the given alpha without relying on CSS color-mix (canvas contexts
+  // don't resolve CSS color-mix() themselves).
+  function color_mix_fallback(colorStr, alpha) {
+    const tmp = document.createElement('div');
+    tmp.style.color = colorStr;
+    document.body.appendChild(tmp);
+    const rgb = getComputedStyle(tmp).color;
+    document.body.removeChild(tmp);
+    const m = /rgba?\(([^)]+)\)/.exec(rgb);
+    if (!m) return colorStr;
+    const parts = m[1].split(',').map(s => s.trim());
+    return `rgba(${parts[0]}, ${parts[1]}, ${parts[2]}, ${alpha})`;
   }
 
   // Top counterparties by spend within the current scope (respects the global month
